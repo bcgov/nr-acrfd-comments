@@ -1,25 +1,21 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "target": "es5",
+    "module": "commonjs",
+    "lib": ["es2017"],
+    "outDir": "./dist",
+    "rootDir": "./",
     "strict": false,
-    "noUncheckedIndexedAccess": true,
-    "moduleDetection": "force",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowJs": true,
     "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "es2022",
+    "declarationMap": true,
     "sourceMap": true,
-    "outDir": "./dist",
-    "baseUrl": "./",
-    "incremental": true,
-    "skipLibCheck": true,
-    "lib": ["es2022"],
-    "types": ["vitest/globals", "node"]  
+    "noImplicitAny": false
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "generated/**/*.ts"],
+  "include": ["app.js", "api/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

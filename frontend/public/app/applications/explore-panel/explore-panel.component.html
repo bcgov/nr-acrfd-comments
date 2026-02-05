@@ -1,0 +1,76 @@
+<div class="flex-panel">
+  <div class="flex-panel__header">
+    <h3 class="title">Explore Applications</h3>
+  </div>
+  <div class="flex-panel__scroll">
+
+    <div class="form-group">
+      <label class="control-label">Posted Between</label>
+      <div class="date-range">
+        <div class="date-range__input">
+          <label class="sr-only">Start Date</label>
+          <app-date-input class="gtm-filter-published-from"
+            [(date)]="publishFromFilter.filter.value"
+            [minDate]="minDate"
+            [maxDate]="publishToFilter.filter.value ? publishToFilter.filter.value : maxDate">
+          </app-date-input>
+        </div>
+        <div class="date-range__spacer">&ndash;</div>
+        <div class="date-range__input end-date">
+          <label class="sr-only">End Date</label>
+          <app-date-input class="gtm-filter-published-to"
+            [(date)]="publishToFilter.filter.value"
+            [maxDate]="maxDate"
+            [minDate]="publishFromFilter.filter.value ? publishFromFilter.filter.value : minDate">
+          </app-date-input>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="control-label">Comment Period</label>
+      <div class="select-badge-group">
+        <div class="select-badge" *ngFor="let filter of commentPeriodFilters.filters">
+          <input type="checkbox" name="{{filter.queryParam}}" id="{{filter.queryParam}}" [checked]="filter.value" (click)="toggleFilter(filter)"/>
+          <label for="{{filter.queryParam}}">{{filter.displayString}}</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="control-label">Purpose <button (click)="showPurposeInfoModal()" title="Show me more information about what I can expect to find when selecting a purpose">What are these?</button></label>
+      <div class="select-badge-group">
+        <div class="select-badge" *ngFor="let filter of purposeFilters.filters">
+          <input type="checkbox" name="{{filter.queryParam}}" id="{{filter.queryParam}}" [checked]="filter.value" (click)="toggleFilter(filter)"/>
+          <label for="{{filter.queryParam}}">{{filter.displayString}}</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="control-label">Application Status</label>
+      <div class="select-badge-group">
+        <div class="select-badge" *ngFor="let filter of statusFilters.filters">
+          <input type="checkbox" name="{{filter.queryParam}}" id="{{filter.queryParam}}" [checked]="filter.value" (click)="toggleFilter(filter)"/>
+          <label for="{{filter.queryParam}}">{{filter.displayString}}</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-btns">
+      <button class="btn btn-primary gtm-apply-filters explore-btn-lg-device" type="button" title="Apply filters"
+        (click)="applyAllFilters()">
+        Explore
+      </button>
+      <button class="btn btn-primary gtm-apply-filters explore-btn-sm-device" type="button" title="Apply filters"
+        (click)="applyAllFiltersMobile()">
+        Explore
+      </button>
+      <button class="btn btn-light" type="button" title="Clear filters"
+        (click)="clear()">
+        Clear
+      </button>
+    </div>
+
+  </div>
+</div>

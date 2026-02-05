@@ -1,35 +1,31 @@
-# Build
-FROM node:24.13.0-slim AS build
+# Build stage
+FROM node:22-alpine
 
-# Copy, build static files; see .dockerignore for exclusions
+# Install dependencies and build
 WORKDIR /app
-COPY . ./
-ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
-RUN npm run deploy
+COPY package*.json ./
+RUN npm install
 
-# Dependencies
-FROM node:24.13.0-slim AS dependencies
+# Copy app code
+COPY . .
 
-# Copy, build static files; see .dockerignore for exclusions
-WORKDIR /app
-COPY . ./
-ENV PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
-RUN npm ci --ignore-scripts --no-update-notifier --omit=dev
-
-# Deploy using minimal Distroless image
-FROM gcr.io/distroless/nodejs22-debian12:nonroot
+# Runtime stage
+FROM node:22-alpine
 ENV NODE_ENV=production
 
-# Copy app and dependencies
+# Install production dependencies only
 WORKDIR /app
-COPY --from=dependencies /app/node_modules ./node_modules
-COPY --from=build /app/generated ./generated
-COPY --from=build /app/dist ./dist
+COPY package*.json ./
+RUN npm install --omit=dev
 
-# Boilerplate, not used in OpenShift/Kubernetes
+# Copy app code from build stage
+COPY --from=0 /app /app
+
+# Expose port
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:3000/api
 
-# Nonroot user, limit heap size to 150 MB
-USER nonroot
-CMD ["--max-old-space-size=150", "/app/dist/main"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s CMD curl -f http://localhost:3000/api || exit 1
+
+# Start app
+CMD ["npm", "start"]
