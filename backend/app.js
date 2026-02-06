@@ -30,6 +30,11 @@ const dbConnection =
 app.use(bodyParser.json({ limit: '10mb', extended: true }))
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }))
 
+// Health check endpoint (for liveness/readiness probes)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' })
+})
+
 // Enable CORS
 app.use(function (req, res, next) {
   defaultLog.info(req.method, req.url)
