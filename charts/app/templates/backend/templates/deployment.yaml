@@ -35,9 +35,11 @@ spec:
             allowPrivilegeEscalation: false
           image: "{{ .Values.global.registry | default "ghcr.io" }}/{{.Values.global.repository}}/backend:{{ .Values.global.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ default "Always" .Values.backend.imagePullPolicy }}
+          {{- if .Values.global.databaseAlias }}
           envFrom:
             - secretRef:
                 name: {{.Release.Name}}-backend
+          {{- end }}
           env:
             - name: LOG_LEVEL
               value: info
