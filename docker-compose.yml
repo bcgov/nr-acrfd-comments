@@ -29,6 +29,7 @@ services:
     ports: ["27017:27017"]
     volumes:
       - mongodb_data:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
 
   backend:
     container_name: backend
@@ -45,11 +46,6 @@ services:
       SSO_ISSUER: ${SSO_ISSUER:-https://dev.oidc.gov.bc.ca/auth/realms/prc}
       SSO_JWKSURI: ${SSO_JWKSURI:-https://dev.oidc.gov.bc.ca/auth/realms/prc/protocol/openid-connect/certs}
     ports: ["3001:3000"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
     working_dir: "/app"
     volumes:
       - ./backend:/app
@@ -70,11 +66,6 @@ services:
     working_dir: "/app"
     volumes:
       - ./frontend/admin:/app/admin
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4200"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
 
   frontend-public:
     container_name: frontend-public
@@ -90,11 +81,6 @@ services:
     working_dir: "/app"
     volumes:
       - ./frontend/public:/app/public
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
 
 volumes:
   mongodb_data:

@@ -62,8 +62,8 @@ COPY --from=public-build /app/dist ./dist/public
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
-  CMD http-server dist/public -p 3000 -c-1 -s 2>/dev/null || exit 1
+# Health check will be defined in docker-compose.yml
+# (not executable commands in runtime container)
 
 # Start both apps on different ports
 CMD ["sh", "-c", "http-server dist/admin -p 4200 -c-1 -s & http-server dist/public -p 3000 -c-1 -s"]
