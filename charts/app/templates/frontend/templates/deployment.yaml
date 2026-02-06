@@ -56,8 +56,8 @@ spec:
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /health
-              port: 3001
+              path: /
+              port: 3000
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 2
@@ -69,8 +69,8 @@ spec:
             successThreshold: 1
             failureThreshold: 3
             httpGet:
-              path: /health
-              port: 3001
+              path: /
+              port: 3000
               scheme: HTTP
             initialDelaySeconds: 15
             periodSeconds: 30
