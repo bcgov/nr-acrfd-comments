@@ -1,0 +1,11 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "description": "Frontend monorepo for admin and public applications",
+  "scripts": {
+    "lint": "npm run lint --prefix admin && npm run lint --prefix public",
+    "test": "npm run test --prefix public",
+    "test:cov": "npm run test:cov --prefix public"
+  },
+  "private": true
+}
