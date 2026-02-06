@@ -44,11 +44,9 @@ spec:
             - name: LOG_LEVEL
               value: info
             # MongoDB connection
-            - name: MONGODB_HOST
+            - name: MONGODB_SERVICE_HOST
               value: "mongodb"
-            - name: MONGODB_PORT
-              value: "27017"
-            - name: MONGODB_USER
+            - name: MONGODB_USERNAME
               valueFrom:
                 secretKeyRef:
                   name: mongodb-secret

@@ -23,7 +23,7 @@ const dbDatabase = process.env.MONGODB_DATABASE || 'nrts-dev'
 
 const dbConnection =
   db_username && db_password
-    ? `mongodb://${db_username}:${db_password}@${dbHost}/${dbDatabase}?authSource=admin`
+    ? `mongodb://${db_username}:${db_password}@${dbHost}/${dbDatabase}?authSource=${dbDatabase}`
     : `mongodb://${dbHost}/${dbDatabase}`
 
 // Increase postbody sizing
