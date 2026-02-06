@@ -19,7 +19,7 @@ The applications have been integrated into the following structure:
 - **migrations/** - Database migration scripts
 - **charts/** - Helm charts for Kubernetes deployment
 
-## 🏗️ Monorepo Structure
+## 🏗️ Monorepo Structure:
 
 ```
 .
