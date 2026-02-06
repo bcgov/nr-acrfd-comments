@@ -1,0 +1,14 @@
+apiVersion: v2
+name: mongodb
+description: MongoDB StatefulSet for NR ACRFD Comments application
+type: application
+version: 1.0.0
+appVersion: '3.6'
+maintainers:
+  - name: BC Government
+    email: bcgov@gov.bc.ca
+keywords:
+  - mongodb
+  - database
+  - statefulset
+home: https://github.com/bcgov/nr-acrfd-comments

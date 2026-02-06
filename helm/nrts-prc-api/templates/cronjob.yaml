@@ -1,0 +1,122 @@
+{{- if .Values.updateShapesCronJob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "nrts-prc-api.fullname" . }}-update-shapes
+  labels:
+    {{- include "nrts-prc-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: cronjob
+spec:
+  schedule: {{ .Values.updateShapesCronJob.schedule | quote }}
+  concurrencyPolicy: {{ .Values.updateShapesCronJob.concurrencyPolicy }}
+  startingDeadlineSeconds: {{ .Values.updateShapesCronJob.startingDeadlineSeconds }}
+  suspend: {{ .Values.updateShapesCronJob.suspend }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "nrts-prc-api.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: cronjob
+        spec:
+          containers:
+            - name: {{ include "nrts-prc-api.name" . }}-update-shapes
+              image: "{{ .Values.updateShapesCronJob.image.repository }}:{{ .Values.updateShapesCronJob.image.tag }}"
+              imagePullPolicy: {{ .Values.updateShapesCronJob.image.pullPolicy }}
+              command:
+                - bash
+                - -c
+                - |
+                  npm install --prefix seed/ && \
+                  node seed/shapesMigration/updateShapes.js "${API_USERNAME}" "${API_PASSWORD}" "${API_PROTOCOL}" "${API_HOST}" "${API_PORT}" "${CLIENT_ID}" "${GRANT_TYPE}" "${AUTH_ENDPOINT}" 5 year; \
+                  if [ $? -eq 0 ]; then \
+                    curl -X POST -H "Content-Type: application/json" --data "${JSON_PAYLOAD}" "${NOTIFICATION_URL}"; \
+                  else \
+                    curl -X POST -H "Content-Type: application/json" --data "${JSON_PAYLOAD_FAIL}" "${NOTIFICATION_URL}"; \
+                  fi
+              env:
+                - name: API_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: api-username
+                - name: API_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: api-password
+                - name: API_PROTOCOL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: api-protocol
+                - name: API_HOST
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: api-host
+                - name: API_PORT
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: api-port
+                - name: CLIENT_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: client-id
+                - name: GRANT_TYPE
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: grant-type
+                - name: AUTH_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: auth-endpoint
+                - name: JSON_PAYLOAD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: json-payload
+                - name: JSON_PAYLOAD_FAIL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: json-payload-fail
+                - name: NOTIFICATION_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: notification-url
+                - name: WEBADE_AUTH_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: webade-auth-endpoint
+                - name: WEBADE_USERNAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: webade-username
+                - name: TTLS_API_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.apiSecretsName }}
+                      key: ttls-api-endpoint
+                - name: WEBADE_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.updateShapesCronJob.webadePasswordSecret.name }}
+                      key: {{ .Values.updateShapesCronJob.webadePasswordSecret.key }}
+              resources:
+                {{- toYaml .Values.updateShapesCronJob.resources | nindent 16 }}
+          restartPolicy: {{ .Values.updateShapesCronJob.restartPolicy }}
+          terminationGracePeriodSeconds: {{ .Values.updateShapesCronJob.terminationGracePeriodSeconds }}
+          dnsPolicy: ClusterFirst
+          securityContext: {}
+          schedulerName: default-scheduler
+{{- end }}

@@ -1,0 +1,95 @@
+# Default values for MongoDB StatefulSet
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  # Using OpenShift's built-in MongoDB image
+  repository: image-registry.openshift-image-registry.svc:5000/openshift/mongodb
+  tag: '3.6'
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+
+# Secret configuration - pre-defined Kubernetes Secret
+# The Secret must contain: mongodb-username, mongodb-password, mongodb-database, mongodb-admin-password
+secret:
+  name: mongodb-secret
+
+# Persistence configuration
+persistence:
+  # Use existing PVC - this preserves your current data
+  enabled: true
+  existingClaim: mongodb-data
+  mountPath: /var/lib/mongodb/data
+  # If existingClaim is not set, a new PVC will be created
+  # storageClassName: ""
+  # size: 10Gi
+  # accessMode: ReadWriteOnce
+
+# Service configuration
+service:
+  name: mongodb
+  type: ClusterIP
+  port: 27017
+  # Headless service for StatefulSet - required for DNS
+  clusterIP: None
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: '2'
+    memory: 4Gi
+  requests:
+    cpu: 500m
+    memory: 2Gi
+
+# Readiness probe - checks if MongoDB is accepting connections
+readinessProbe:
+  enabled: true
+  exec:
+    command:
+      - /bin/sh
+      - '-i'
+      - '-c'
+      - 'mongo 127.0.0.1:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD
+        --eval="quit()"'
+  initialDelaySeconds: 3
+  timeoutSeconds: 1
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+
+# Liveness probe - restarts pod if MongoDB stops responding
+livenessProbe:
+  enabled: true
+  tcpSocket:
+    port: 27017
+  initialDelaySeconds: 30
+  timeoutSeconds: 1
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+
+# Node selector - optional, allows targeting specific nodes
+nodeSelector: {}
+
+# Tolerations - optional, for node taints
+tolerations: []
+
+# Affinity rules - optional, for pod scheduling
+affinity: {}
+
+# Security context
+securityContext: {}
+
+# Pod security policy
+podSecurityPolicy:
+  enabled: false
+  name: ''
+
+# Enable debug logging
+debug: false

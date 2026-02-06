@@ -1,0 +1,99 @@
+# Default values for NRTS PRC API
+# This is a YAML-formatted file.
+
+replicaCount: 1
+
+image:
+  repository: image-registry.openshift-image-registry.svc:5000/nrts-prc-tools/nrts-prc-api
+  tag: 'master'
+  pullPolicy: Always
+
+imagePullSecrets: []
+nameOverride: ''
+fullnameOverride: ''
+
+# Service configuration
+service:
+  name: nrts-prc-api
+  type: ClusterIP
+  port: 3001
+  targetPort: 3001
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: '1'
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Node selector - optional, allows targeting specific nodes
+nodeSelector: {}
+
+# Tolerations - optional, for node taints
+tolerations: []
+
+# Affinity rules - optional, for pod scheduling
+affinity: {}
+
+# Update Shapes CronJob
+updateShapesCronJob:
+  enabled: true
+  schedule: '1 2 * * *' # 2:01 AM daily (override per environment)
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 999
+  suspend: false
+
+  # Image for CronJob
+  image:
+    repository: image-registry.openshift-image-registry.svc:5000/nrts-prc-tools/nrts-prc-api
+    tag: 'latest'
+    pullPolicy: Always
+
+  # Reference to pre-defined secrets
+  # nrts-prc-api-secrets contains all API configuration
+  apiSecretsName: nrts-prc-api-secrets
+
+  # Reference to pre-defined secret containing WEBADE credentials
+  webadePasswordSecret:
+    name: '' # Filled from environment-specific secret (ttls-api-test or ttls-api-prod)
+    key: apikey
+
+  # Environment variables map - DEPRECATED, kept for reference only
+  # All environment variables now come from nrts-prc-api-secrets
+  env: {}
+
+  resources:
+    limits:
+      cpu: '500m'
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 30
+
+# Readiness and liveness probes
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /api/public/application
+    port: 3001
+  initialDelaySeconds: 10
+  timeoutSeconds: 5
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /api/public/application
+    port: 3001
+  initialDelaySeconds: 30
+  timeoutSeconds: 5
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3

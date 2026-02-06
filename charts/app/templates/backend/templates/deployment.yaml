@@ -27,33 +27,6 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-      initContainers:
-        - name: {{ include "backend.fullname" . }}-init
-          securityContext:
-            runAsNonRoot: true
-            readOnlyRootFilesystem: true
-            allowPrivilegeEscalation: false
-          image: "{{ .Values.global.registry | default "ghcr.io" }}/{{.Values.global.repository}}/migrations:{{ .Values.global.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ default "Always" .Values.backend.imagePullPolicy }}
-          envFrom:
-            - secretRef:
-                name: {{.Release.Name}}-flyway
-          env:
-            - name: FLYWAY_BASELINE_ON_MIGRATE
-              value: "true"
-            - name: FLYWAY_DEFAULT_SCHEMA
-              value: "users"
-            - name: FLYWAY_CONNECT_RETRIES
-              value: "10"
-            - name: FLYWAY_GROUP
-              value: "true"
-          resources:
-            requests:
-              cpu: 50m
-              memory: 200Mi
-            limits:
-              cpu: 4
-              memory: 8Gi
       containers:
         - name: {{ include "backend.fullname" . }}
           securityContext:

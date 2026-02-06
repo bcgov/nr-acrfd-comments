@@ -49,7 +49,7 @@ on:
         required: false
         type: boolean
       db_triggers:
-        description: Paths used to trigger a database deployment; e.g. ('charts/crunchy/')
+        description: Paths used to trigger a database deployment
         required: false
         type: string
 
@@ -92,16 +92,6 @@ jobs:
       tag: ${{ inputs.tag || steps.pr.outputs.pr }}
       triggered: ${{ steps.deploy.outputs.triggered }}
     steps:
-      - uses: bcgov/action-crunchy@a109166ff26880dc75676492a33b816ac0ce392f # v1.2.6
-        name: Deploy Crunchy
-        id: deploy_crunchy
-        with:
-          oc_namespace: ${{ secrets.OC_NAMESPACE }}
-          oc_token: ${{ secrets.OC_TOKEN }}
-          environment: ${{ inputs.environment }}
-          values_file: charts/crunchy/values.yml
-          triggers: ${{ inputs.db_triggers }}
-
       # Variables
       - if: inputs.tag  == ''
         id: pr
@@ -148,10 +138,6 @@ jobs:
             fi
 
       - uses: actions/checkout@v6
-      - name: Debug Values File
-        if: inputs.debug == 'true'
-        run: ls -l charts/crunchy/values.yml
-
       - name: Helm Deploy
         id: deploy
         uses: bcgov/action-oc-runner@f900830adadd4d9eef3ca6ff80103e839ba8b7c0 # v1.3.0
@@ -176,7 +162,6 @@ jobs:
               --set-string global.repository=${{ github.repository }} \
               --set-string global.tag="${{ steps.vars.outputs.tag }}" \
               --set-string global.config.databaseUser="${{ inputs.db_user }}" \
-              --set-string global.databaseAlias="${{ steps.deploy_crunchy.outputs.release }}-crunchy" \
               ${{ inputs.params }} \
               --install --wait ${{ inputs.atomic && '--atomic' || '' }} ${{ steps.vars.outputs.release }} \
               --timeout ${{ inputs.timeout-minutes }}m \
