@@ -17,6 +17,5 @@
     "no-debugger": "warn",
     "no-unused-vars": "off",
     "no-empty": ["error", { "allowEmptyCatch": true }]
-  },
-  "ignorePatterns": ["node_modules", "coverage", "dist", ".git"]
+  }
 }
