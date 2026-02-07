@@ -41,32 +41,32 @@ let newGeometry = db.features.aggregate([
   {
     $match: {
       // match records that have the old format
-      'geometry.coordinates': { $exists: 1 }
-    }
+      'geometry.coordinates': { $exists: 1 },
+    },
   },
   {
     $project: {
       // update the geometry.type to always be GeometryCollection
       'geometry.type': 'GeometryCollection',
       // save the old geometry data in a temp variable
-      oldGeometry: '$geometry'
-    }
+      oldGeometry: '$geometry',
+    },
   },
   {
     $addFields: {
       // add the new geometries array, and add the saved old geometry data to it
-      'geometry.geometries': ['$oldGeometry']
-    }
+      'geometry.geometries': ['$oldGeometry'],
+    },
   },
   {
     $project: {
       // (optional) dont project the temp oldGeometry variable as it is no longer needed
-      oldGeometry: 0
-    }
-  }
-]);
+      oldGeometry: 0,
+    },
+  },
+])
 
 // for each aggregate result, update the real record
-newGeometry.forEach(element => {
-  db.features.update({ _id: element._id }, { $set: { geometry: element.geometry } });
-});
+newGeometry.forEach((element) => {
+  db.features.update({ _id: element._id }, { $set: { geometry: element.geometry } })
+})

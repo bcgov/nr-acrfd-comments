@@ -1,10 +1,10 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { AppMapComponent } from './app-map.component';
-import { ApplicationService } from 'app/services/application.service';
+import { async, ComponentFixture, TestBed } from '@angular/core/testing'
+import { AppMapComponent } from './app-map.component'
+import { ApplicationService } from 'app/services/application.service'
 
 describe('AppMapComponent', () => {
-  let component: AppMapComponent;
-  let fixture: ComponentFixture<AppMapComponent>;
+  let component: AppMapComponent
+  let fixture: ComponentFixture<AppMapComponent>
 
   // const apiServiceSpy = jasmine.createSpyObj('ApiService', ['getApplications']);
 
@@ -15,22 +15,22 @@ describe('AppMapComponent', () => {
   //   jasmine.createSpyObj('DecisionService', ['getAllByApplicationId']),
   //   jasmine.createSpyObj('FeatureService', ['getAllByApplicationId'])
   // );
-  const applicationServiceSpy = jasmine.createSpyObj('ApplicationService', ['getAll']);
+  const applicationServiceSpy = jasmine.createSpyObj('ApplicationService', ['getAll'])
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       declarations: [AppMapComponent],
-      providers: [{ provide: ApplicationService, useValue: applicationServiceSpy }]
-    }).compileComponents();
-  }));
+      providers: [{ provide: ApplicationService, useValue: applicationServiceSpy }],
+    }).compileComponents()
+  }))
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(AppMapComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+    fixture = TestBed.createComponent(AppMapComponent)
+    component = fixture.componentInstance
+    fixture.detectChanges()
+  })
 
   xit('should be created', () => {
-    expect(component).toBeTruthy();
-  });
-});
+    expect(component).toBeTruthy()
+  })
+})

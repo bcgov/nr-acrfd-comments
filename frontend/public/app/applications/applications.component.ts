@@ -1,22 +1,22 @@
-import { Component, OnInit, AfterViewInit, OnDestroy, Renderer2, ViewChild } from '@angular/core';
-import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material';
-import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
-import { Router, UrlTree } from '@angular/router';
+import { Component, OnInit, AfterViewInit, OnDestroy, Renderer2, ViewChild } from '@angular/core'
+import { MatSnackBarRef, SimpleSnackBar, MatSnackBar } from '@angular/material'
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap'
+import { Router, UrlTree } from '@angular/router'
 
-import { Observable, Subject, Subscription, concat } from 'rxjs';
-import * as operators from 'rxjs/operators';
-import * as _ from 'lodash';
+import { Observable, Subject, Subscription, concat } from 'rxjs'
+import * as operators from 'rxjs/operators'
+import * as _ from 'lodash'
 
-import { AppMapComponent } from './app-map/app-map.component';
-import { AppListComponent } from './app-list/app-list.component';
-import { FindPanelComponent } from './find-panel/find-panel.component';
-import { ExplorePanelComponent } from './explore-panel/explore-panel.component';
-import { DetailsPanelComponent } from './details-panel/details-panel.component';
-import { SplashModalComponent } from './splash-modal/splash-modal.component';
-import { Application } from 'app/models/application';
-import { ApplicationService, IFiltersType } from 'app/services/application.service';
-import { UrlService } from 'app/services/url.service';
-import { Panel } from './utils/panel.enum';
+import { AppMapComponent } from './app-map/app-map.component'
+import { AppListComponent } from './app-list/app-list.component'
+import { FindPanelComponent } from './find-panel/find-panel.component'
+import { ExplorePanelComponent } from './explore-panel/explore-panel.component'
+import { DetailsPanelComponent } from './details-panel/details-panel.component'
+import { SplashModalComponent } from './splash-modal/splash-modal.component'
+import { Application } from 'app/models/application'
+import { ApplicationService, IFiltersType } from 'app/services/application.service'
+import { UrlService } from 'app/services/url.service'
+import { Panel } from './utils/panel.enum'
 
 /**
  * Object emitted by child panel on update.
@@ -26,16 +26,16 @@ import { Panel } from './utils/panel.enum';
  */
 export interface IUpdateEvent {
   // filters (See IFiltersType)
-  filters?: IFiltersType;
+  filters?: IFiltersType
 
   // True if the search was manually initiated (button click), false if it is emitting as part of component initiation.
-  search?: boolean;
+  search?: boolean
 
   // True if the map view should be reset
-  resetMap?: boolean;
+  resetMap?: boolean
 
   // True if the panel should be collapsed
-  hidePanel?: boolean;
+  hidePanel?: boolean
 }
 
 const emptyFilters: IFiltersType = {
@@ -47,12 +47,12 @@ const emptyFilters: IFiltersType = {
   publishTo: null,
   cpStatuses: [],
   purposes: [],
-  appStatuses: []
-};
+  appStatuses: [],
+}
 
 // Page size needs to be small enough to give reasonable app loading feedback on slow networks but large enough for
 // optimized "added/deleted" app logic (see map component)
-const PAGE_SIZE = 250;
+const PAGE_SIZE = 250
 
 /**
  * Main public site component.
@@ -66,37 +66,37 @@ const PAGE_SIZE = 250;
 @Component({
   selector: 'app-applications',
   templateUrl: './applications.component.html',
-  styleUrls: ['./applications.component.scss']
+  styleUrls: ['./applications.component.scss'],
 })
 export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('appmap') appmap: AppMapComponent;
-  @ViewChild('applist') applist: AppListComponent;
-  @ViewChild('findPanel') findPanel: FindPanelComponent;
-  @ViewChild('explorePanel') explorePanel: ExplorePanelComponent;
-  @ViewChild('detailsPanel') detailsPanel: DetailsPanelComponent;
+  @ViewChild('appmap') appmap: AppMapComponent
+  @ViewChild('applist') applist: AppListComponent
+  @ViewChild('findPanel') findPanel: FindPanelComponent
+  @ViewChild('explorePanel') explorePanel: ExplorePanelComponent
+  @ViewChild('detailsPanel') detailsPanel: DetailsPanelComponent
 
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>()
 
-  private splashModal: NgbModalRef = null;
-  private snackbarRef: MatSnackBarRef<SimpleSnackBar> = null;
+  private splashModal: NgbModalRef = null
+  private snackbarRef: MatSnackBarRef<SimpleSnackBar> = null
 
   // necessary to allow referencing the enum in the html
-  public Panel = Panel;
+  public Panel = Panel
 
   // indicates which side panel should be shown
-  public activePanel: Panel;
+  public activePanel: Panel
 
-  public isLoading = false;
-  public loadInitialApps = true;
+  public isLoading = false
+  public loadInitialApps = true
 
-  public urlTree: UrlTree;
+  public urlTree: UrlTree
 
-  public observablesSub: Subscription = null;
-  public coordinates: string = null;
+  public observablesSub: Subscription = null
+  public coordinates: string = null
 
-  public filters: IFiltersType = emptyFilters;
-  public apps: Application[] = [];
-  public totalNumber = 0;
+  public filters: IFiltersType = emptyFilters
+  public apps: Application[] = []
+  public totalNumber = 0
 
   constructor(
     public snackbar: MatSnackBar,
@@ -104,35 +104,35 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
     private router: Router,
     private applicationService: ApplicationService,
     public urlService: UrlService,
-    private renderer: Renderer2
+    private renderer: Renderer2,
   ) {
     // watch for URL param changes
-    this.urlService.onNavEnd$.pipe(operators.takeUntil(this.ngUnsubscribe)).subscribe(event => {
-      this.urlTree = router.parseUrl(event.url);
+    this.urlService.onNavEnd$.pipe(operators.takeUntil(this.ngUnsubscribe)).subscribe((event) => {
+      this.urlTree = router.parseUrl(event.url)
 
       if (this.urlTree) {
         switch (this.urlTree.fragment) {
           case 'splash':
-            this.displaySplashModal();
-            break;
+            this.displaySplashModal()
+            break
           case Panel.find:
-            this.closeSplashModal();
-            this.activePanel = Panel.find;
-            break;
+            this.closeSplashModal()
+            this.activePanel = Panel.find
+            break
           case Panel.Explore:
-            this.closeSplashModal();
-            this.activePanel = Panel.Explore;
-            break;
+            this.closeSplashModal()
+            this.activePanel = Panel.Explore
+            break
           case Panel.details:
-            this.closeSplashModal();
-            this.activePanel = Panel.details;
-            break;
+            this.closeSplashModal()
+            this.activePanel = Panel.details
+            break
           default:
-            this.closeSplashModal();
-            break;
+            this.closeSplashModal()
+            break
         }
       }
-    });
+    })
   }
 
   /**
@@ -141,7 +141,7 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    * @memberof ApplicationsComponent
    */
   ngOnInit() {
-    this.renderer.addClass(document.body, 'no-scroll');
+    this.renderer.addClass(document.body, 'no-scroll')
   }
 
   /**
@@ -151,7 +151,7 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   ngAfterViewInit() {
     if (this.loadInitialApps) {
-      this.getApplications();
+      this.getApplications()
     }
   }
 
@@ -163,12 +163,12 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
   public displaySplashModal(): void {
     this.splashModal = this.modalService.open(SplashModalComponent, {
       backdrop: 'static',
-      windowClass: 'splash-modal'
-    });
+      windowClass: 'splash-modal',
+    })
 
     this.splashModal.result.then(() => {
-      this.splashModal.dismiss();
-    });
+      this.splashModal.dismiss()
+    })
   }
 
   /**
@@ -178,7 +178,7 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   public closeSplashModal(): void {
     if (this.splashModal) {
-      this.splashModal.close();
+      this.splashModal.close()
     }
   }
 
@@ -189,8 +189,8 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   public closeSidePanel() {
     if (this.activePanel) {
-      this.activePanel = null;
-      this.urlService.setFragment(null);
+      this.activePanel = null
+      this.urlService.setFragment(null)
     }
   }
 
@@ -202,8 +202,8 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    * @memberof ApplicationsComponent
    */
   public showSnackbar = _.debounce(() => {
-    this.snackbarRef = this.snackbar.open('Loading applications ...');
-  }, 500);
+    this.snackbarRef = this.snackbar.open('Loading applications ...')
+  }, 500)
 
   /**
    * Hides the snackbar.
@@ -212,16 +212,16 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   public hideSnackbar() {
     // cancel any pending open
-    this.showSnackbar.cancel();
+    this.showSnackbar.cancel()
 
     // if snackbar is showing, dismiss it
     // NB: use debounce to delay snackbar dismissal so it is visible for at least 500ms
     _.debounce(() => {
       if (this.snackbarRef) {
-        this.snackbarRef.dismiss();
-        this.snackbarRef = null;
+        this.snackbarRef.dismiss()
+        this.snackbarRef = null
       }
-    }, 500)();
+    }, 500)()
   }
 
   /**
@@ -235,40 +235,42 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => {
       // pre-empt existing observables execution
       if (this.observablesSub && !this.observablesSub.closed) {
-        this.observablesSub.unsubscribe();
+        this.observablesSub.unsubscribe()
       }
 
-      this.showSnackbar();
-      this.isLoading = true;
-      let isFirstPage = true;
+      this.showSnackbar()
+      this.isLoading = true
+      let isFirstPage = true
 
       if (getTotalNumber) {
         // get total number using filters (but not coordinates)
         this.applicationService
           .getCount(this.filters, null)
           .pipe(operators.takeUntil(this.ngUnsubscribe))
-          .subscribe(count => {
-            this.totalNumber = count;
-          });
+          .subscribe((count) => {
+            this.totalNumber = count
+          })
       }
 
       // get latest coordinates
-      this.coordinates = this.appmap.getCoordinates();
+      this.coordinates = this.appmap.getCoordinates()
 
       this.applicationService
         .getCount(this.filters, this.coordinates)
         .pipe(operators.takeUntil(this.ngUnsubscribe))
         .subscribe(
-          count => {
+          (count) => {
             // prepare 'pages' of gets
-            const observables: Array<Observable<Application[]>> = [];
+            const observables: Array<Observable<Application[]>> = []
             for (let page = 0; page < Math.ceil(count / PAGE_SIZE); page++) {
-              observables.push(this.applicationService.getAll(page, PAGE_SIZE, this.filters, this.coordinates));
+              observables.push(
+                this.applicationService.getAll(page, PAGE_SIZE, this.filters, this.coordinates),
+              )
             }
 
             // check if there's nothing to query
             if (observables.length === 0) {
-              this.apps = [];
+              this.apps = []
             }
 
             // get all observables sequentially
@@ -277,42 +279,42 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
               .pipe(
                 operators.takeUntil(this.ngUnsubscribe),
                 operators.finalize(() => {
-                  this.isLoading = false;
-                  this.hideSnackbar();
+                  this.isLoading = false
+                  this.hideSnackbar()
                   // console.log('got', this.apps.length, 'apps in', new Date().getTime() - start, 'ms');
-                })
+                }),
               )
               .subscribe(
-                applications => {
+                (applications) => {
                   if (isFirstPage) {
-                    isFirstPage = false;
+                    isFirstPage = false
                     // replace array with applications so that first 'PAGE_SIZE' apps aren't necessarily redrawn on map
                     // NB: OnChanges event will update the components that use this array
-                    this.apps = applications;
+                    this.apps = applications
                   } else {
                     // NB: OnChanges event will update the components that use this array
                     // NB: remove duplicates (eg, due to bad data such as multiple comment periods)
-                    this.apps = _.uniqBy(_.concat(this.apps, applications), app => app._id);
+                    this.apps = _.uniqBy(_.concat(this.apps, applications), (app) => app._id)
                   }
                 },
-                error => {
-                  console.log(error);
-                  alert("Uh-oh, couldn't load applications");
+                (error) => {
+                  console.log(error)
+                  alert("Uh-oh, couldn't load applications")
                   // applications not found --> navigate back to home
-                  this.router.navigate(['/']);
-                }
-              );
+                  this.router.navigate(['/'])
+                },
+              )
           },
-          error => {
-            console.log(error);
-            alert("Uh-oh, couldn't count applications");
+          (error) => {
+            console.log(error)
+            alert("Uh-oh, couldn't count applications")
             // applications not found --> navigate back to home
-            this.router.navigate(['/']);
-            this.isLoading = false;
-            this.hideSnackbar();
-          }
-        );
-    });
+            this.router.navigate(['/'])
+            this.isLoading = false
+            this.hideSnackbar()
+          },
+        )
+    })
   }
 
   /**
@@ -322,27 +324,27 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    * @memberof ApplicationsComponent
    */
   public handleFindUpdate(updateEvent: IUpdateEvent) {
-    this.loadInitialApps = false; // skip initial app load
+    this.loadInitialApps = false // skip initial app load
 
-    this.filters = { ...emptyFilters, ...updateEvent.filters };
+    this.filters = { ...emptyFilters, ...updateEvent.filters }
 
     if (updateEvent.search) {
       // clear the other panels filters/data
-      this.explorePanel.clearAllFilters();
-      this.explorePanel.saveQueryParameters();
+      this.explorePanel.clearAllFilters()
+      this.explorePanel.saveQueryParameters()
 
-      this.detailsPanel.clearAllFilters();
-      this.appmap.unhighlightApplications();
+      this.detailsPanel.clearAllFilters()
+      this.appmap.unhighlightApplications()
     }
 
-    this.getApplications();
+    this.getApplications()
 
     if (updateEvent.resetMap) {
-      this.appmap.resetView(false);
+      this.appmap.resetView(false)
     }
 
     if (updateEvent.hidePanel) {
-      this.closeSidePanel();
+      this.closeSidePanel()
     }
   }
 
@@ -353,27 +355,27 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    * @memberof ApplicationsComponent
    */
   public handleExploreUpdate(updateEvent: IUpdateEvent) {
-    this.loadInitialApps = false; // skip initial app load
+    this.loadInitialApps = false // skip initial app load
 
-    this.filters = { ...emptyFilters, ...updateEvent.filters };
+    this.filters = { ...emptyFilters, ...updateEvent.filters }
 
     if (updateEvent.search) {
       // clear the other panels filters/data
-      this.findPanel.clearAllFilters();
-      this.findPanel.saveQueryParameters();
+      this.findPanel.clearAllFilters()
+      this.findPanel.saveQueryParameters()
 
-      this.detailsPanel.clearAllFilters();
-      this.appmap.unhighlightApplications();
+      this.detailsPanel.clearAllFilters()
+      this.appmap.unhighlightApplications()
     }
 
-    this.getApplications();
+    this.getApplications()
 
     if (updateEvent.resetMap) {
-      this.appmap.resetView(false);
+      this.appmap.resetView(false)
     }
 
     if (updateEvent.hidePanel) {
-      this.closeSidePanel();
+      this.closeSidePanel()
     }
   }
 
@@ -385,7 +387,7 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    * @memberof ApplicationsComponent
    */
   public handleDetailsUpdate(app: Application) {
-    this.appmap.highlightApplication(app);
+    this.appmap.highlightApplication(app)
   }
 
   /**
@@ -394,7 +396,7 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    * @memberof ApplicationsComponent
    */
   public updateCoordinates(): void {
-    this.getApplications(false); // total number is not affected
+    this.getApplications(false) // total number is not affected
   }
 
   /**
@@ -405,11 +407,11 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   public togglePanel(panel: Panel) {
     if (this.urlTree.fragment === panel) {
-      this.activePanel = null;
-      this.urlService.setFragment(null);
+      this.activePanel = null
+      this.urlService.setFragment(null)
     } else {
-      this.activePanel = panel;
-      this.urlService.setFragment(panel);
+      this.activePanel = panel
+      this.urlService.setFragment(panel)
     }
   }
 
@@ -419,15 +421,15 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    * @memberof ApplicationsComponent
    */
   public clearFilters() {
-    this.findPanel.clearAllFilters();
-    this.findPanel.saveQueryParameters();
+    this.findPanel.clearAllFilters()
+    this.findPanel.saveQueryParameters()
 
-    this.explorePanel.clearAllFilters();
-    this.explorePanel.saveQueryParameters();
+    this.explorePanel.clearAllFilters()
+    this.explorePanel.saveQueryParameters()
 
-    this.filters = emptyFilters;
+    this.filters = emptyFilters
 
-    this.getApplications();
+    this.getApplications()
   }
 
   /**
@@ -444,7 +446,7 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
       !!this.filters.clidDtid ||
       !!this.filters.publishFrom ||
       !!this.filters.publishTo
-    );
+    )
   }
 
   /**
@@ -454,15 +456,15 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   ngOnDestroy() {
     if (this.splashModal) {
-      this.splashModal.dismiss();
+      this.splashModal.dismiss()
     }
 
     if (this.snackbarRef) {
-      this.hideSnackbar();
+      this.hideSnackbar()
     }
 
-    this.renderer.removeClass(document.body, 'no-scroll');
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    this.renderer.removeClass(document.body, 'no-scroll')
+    this.ngUnsubscribe.next()
+    this.ngUnsubscribe.complete()
   }
 }

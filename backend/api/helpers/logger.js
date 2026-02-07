@@ -1,5 +1,5 @@
-const moment = require('moment');
-const winston = require('winston');
+const moment = require('moment')
+const winston = require('winston')
 
 /**
  * Centralized logger that uses Winston 2.x.
@@ -25,12 +25,14 @@ const getLogger = function(logLabel) {
       new winston.transports.Console({
         level: process.env.LOG_LEVEL || 'info',
         label: logLabel || '',
-        formatter: info => {
-          return `[${moment().format('DD-MM-YYYY HH:mm:ss')}] [${info.level}] (${info.label}): ${info.message}`;
-        }
-      })
-    ]
-  });
-};
+        formatter: (info) => {
+          return `[${moment().format('DD-MM-YYYY HH:mm:ss')}] [${info.level}] (${info.label}): ${
+            info.message
+          }`
+        },
+      }),
+    ],
+  })
+}
 
-module.exports = label => getLogger(label);
+module.exports = (label) => getLogger(label)

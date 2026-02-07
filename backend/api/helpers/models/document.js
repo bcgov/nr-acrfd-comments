@@ -13,5 +13,5 @@ module.exports = require('../models')('Document', {
   passedAVCheck: { type: Boolean, default: false },
   internalMime: { type: String, default: '' },
 
-  __index: { '$**': 'text' }
-});
+  __index: { '$**': 'text' },
+})

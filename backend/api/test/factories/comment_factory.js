@@ -1,20 +1,20 @@
-const factory = require('factory-girl').factory;
-const Comment = require('../../helpers/models/comment');
+const factory = require('factory-girl').factory
+const Comment = require('../../helpers/models/comment')
 
-factory.define('comment', Comment, buildOptions => {
+factory.define('comment', Comment, (buildOptions) => {
   let attrs = {
-    code: factory.seq('Comment.code', n => `comment-code-${n}`),
+    code: factory.seq('Comment.code', (n) => `comment-code-${n}`),
     comment: factory.chance('sentence'),
     name: factory.chance('name'),
     isDeleted: false,
-    tags: [['public'], ['sysadmin']]
-  };
-  if (buildOptions.public) {
-    attrs.tags = [['public'], ['sysadmin']];
-  } else if (buildOptions.public === false) {
-    attrs.tags = [['sysadmin']];
+    tags: [['public'], ['sysadmin']],
   }
-  return attrs;
-});
+  if (buildOptions.public) {
+    attrs.tags = [['public'], ['sysadmin']]
+  } else if (buildOptions.public === false) {
+    attrs.tags = [['sysadmin']]
+  }
+  return attrs
+})
 
-exports.factory = factory;
+exports.factory = factory

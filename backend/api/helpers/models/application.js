@@ -33,5 +33,5 @@ module.exports = require('../models')('Application', {
   tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]], // updated by API
 
   // Used to enable client (applicant) $text search.
-  __index: { client: 'text' }
-});
+  __index: { client: 'text' },
+})

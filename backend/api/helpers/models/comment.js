@@ -28,10 +28,10 @@ module.exports = require('../models')('Comment', {
     internal: {
       email: { type: String, default: '' },
       phone: { type: String, default: '' },
-      tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]]
+      tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]],
     },
 
-    tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]]
+    tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]],
   },
 
   // Who vetted this comment?
@@ -40,12 +40,12 @@ module.exports = require('../models')('Comment', {
     reviewerNotes: { type: String, default: '' },
     reviewerDate: { type: Date, default: '' },
 
-    tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]]
+    tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]],
   },
 
   // TODO: More date fields?
   dateAdded: { type: Date, default: Date.now() },
 
   commentStatus: { type: String, default: 'Pending', enum: ['Pending', 'Accepted', 'Rejected'] },
-  isDeleted: { type: Boolean, default: false }
-});
+  isDeleted: { type: Boolean, default: false },
+})

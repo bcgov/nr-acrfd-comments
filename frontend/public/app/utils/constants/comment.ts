@@ -1,4 +1,4 @@
-import { ICodeGroup } from './interfaces';
+import { ICodeGroup } from './interfaces'
 
 /**
  * Comment Status codes.
@@ -13,32 +13,32 @@ export class CommentCodes {
     code: 'NOT_OPEN',
     param: 'NO',
     text: { long: 'Commenting Closed', short: 'Not Open' },
-    mappedCodes: []
-  };
+    mappedCodes: [],
+  }
 
   // Comment period will open in the future
   public static readonly NOT_STARTED: ICodeGroup = {
     code: 'NOT_STARTED',
     param: 'NS',
     text: { long: 'Commenting Not Started', short: 'Not Started' },
-    mappedCodes: []
-  };
+    mappedCodes: [],
+  }
 
   // Comment period is closed
   public static readonly CLOSED: ICodeGroup = {
     code: 'CLOSED',
     param: 'CL',
     text: { long: 'Commenting Closed', short: 'Closed' },
-    mappedCodes: []
-  };
+    mappedCodes: [],
+  }
 
   // Comment period is currently open
   public static readonly OPEN: ICodeGroup = {
     code: 'OPEN',
     param: 'OP',
     text: { long: 'Commenting Open', short: 'Open' },
-    mappedCodes: []
-  };
+    mappedCodes: [],
+  }
 
   /**
    * @inheritdoc
@@ -48,6 +48,6 @@ export class CommentCodes {
     CommentCodes.NOT_OPEN,
     CommentCodes.NOT_STARTED,
     CommentCodes.CLOSED,
-    CommentCodes.OPEN
-  ];
+    CommentCodes.OPEN,
+  ]
 }

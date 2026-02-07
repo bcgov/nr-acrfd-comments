@@ -5,9 +5,9 @@ module.exports = require('../models')('Feature', {
     geometries: [
       {
         type: { type: String, default: '' },
-        coordinates: [[]]
-      }
-    ]
+        coordinates: [[]],
+      },
+    ],
   },
   properties: {
     INTRID_SID: { type: Number, default: 0 },
@@ -32,12 +32,12 @@ module.exports = require('../models')('Feature', {
     FEATURE_AREA_SQM: { type: Number, default: 0 },
     FEATURE_LENGTH_M: { type: Number, default: 0 },
     OBJECTID: { type: Number, default: 0 },
-    SE_ANNO_CAD_DATA: { type: String, default: '' }
+    SE_ANNO_CAD_DATA: { type: String, default: '' },
   },
   isDeleted: { type: Boolean, default: false },
   // Which PRC application does this shape belong to?
   applicationID: { type: 'ObjectId', ref: 'Application', default: null },
   // Note: Default on tag property is purely for display only, they have no real effect on the model
   // This must be done in the code.
-  tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]]
-});
+  tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]],
+})

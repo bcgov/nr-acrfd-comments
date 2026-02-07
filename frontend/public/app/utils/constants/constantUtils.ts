@@ -1,6 +1,12 @@
-import { StatusCodes, ReasonCodes, RegionCodes, PurposeCodes, LandUseTypeCodes } from './application';
-import { ICodeSet, ICodeGroup } from './interfaces';
-import { CommentCodes } from './comment';
+import {
+  StatusCodes,
+  ReasonCodes,
+  RegionCodes,
+  PurposeCodes,
+  LandUseTypeCodes,
+} from './application'
+import { ICodeSet, ICodeGroup } from './interfaces'
+import { CommentCodes } from './comment'
 
 /**
  * Enum of supported code sets.
@@ -14,7 +20,7 @@ export enum CodeType {
   REGION,
   PURPOSE,
   LANDUSETYPE,
-  COMMENT
+  COMMENT,
 }
 
 /**
@@ -35,19 +41,19 @@ export class ConstantUtils {
   public static getCodeSet(codeType: CodeType): ICodeSet {
     switch (codeType) {
       case CodeType.STATUS:
-        return new StatusCodes();
+        return new StatusCodes()
       case CodeType.REASON:
-        return new ReasonCodes();
+        return new ReasonCodes()
       case CodeType.REGION:
-        return new RegionCodes();
+        return new RegionCodes()
       case CodeType.PURPOSE:
-        return new PurposeCodes();
+        return new PurposeCodes()
       case CodeType.LANDUSETYPE:
-        return new LandUseTypeCodes();
+        return new LandUseTypeCodes()
       case CodeType.COMMENT:
-        return new CommentCodes();
+        return new CommentCodes()
       default:
-        return null;
+        return null
     }
   }
 
@@ -65,31 +71,31 @@ export class ConstantUtils {
    */
   public static getCodeGroup(codeType: CodeType, searchString: string): ICodeGroup {
     if (!searchString) {
-      return null;
+      return null
     }
 
-    const codeSet: ICodeSet = this.getCodeSet(codeType);
+    const codeSet: ICodeSet = this.getCodeSet(codeType)
 
     if (!codeSet) {
-      return null;
+      return null
     }
 
-    const codeGroups = codeSet.getCodeGroups();
+    const codeGroups = codeSet.getCodeGroups()
 
     for (const codeGroup of codeGroups) {
-      searchString = searchString.toUpperCase();
+      searchString = searchString.toUpperCase()
       if (
         codeGroup.code.toUpperCase() === searchString ||
         codeGroup.param.toUpperCase() === searchString ||
         codeGroup.text.long.toUpperCase() === searchString ||
         codeGroup.text.short.toUpperCase() === searchString ||
-        codeGroup.mappedCodes.map(code => code.toUpperCase()).includes(searchString)
+        codeGroup.mappedCodes.map((code) => code.toUpperCase()).includes(searchString)
       ) {
-        return codeGroup;
+        return codeGroup
       }
     }
 
-    return null;
+    return null
   }
 
   /**
@@ -103,16 +109,16 @@ export class ConstantUtils {
    */
   static getCode(codeType: CodeType, searchString: string): string {
     if (!searchString) {
-      return null;
+      return null
     }
 
-    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString);
+    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString)
 
     if (!codeGroup) {
-      return null;
+      return null
     }
 
-    return codeGroup.code;
+    return codeGroup.code
   }
 
   /**
@@ -126,16 +132,16 @@ export class ConstantUtils {
    */
   static getParam(codeType: CodeType, searchString: string): string {
     if (!searchString) {
-      return null;
+      return null
     }
 
-    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString);
+    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString)
 
     if (!codeGroup) {
-      return null;
+      return null
     }
 
-    return codeGroup.param;
+    return codeGroup.param
   }
 
   /**
@@ -149,16 +155,16 @@ export class ConstantUtils {
    */
   static getTextShort(codeType: CodeType, searchString: string): string {
     if (!searchString) {
-      return null;
+      return null
     }
 
-    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString);
+    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString)
 
     if (!codeGroup) {
-      return null;
+      return null
     }
 
-    return codeGroup.text.short;
+    return codeGroup.text.short
   }
 
   /**
@@ -172,16 +178,16 @@ export class ConstantUtils {
    */
   static getTextLong(codeType: CodeType, searchString: string): string {
     if (!searchString) {
-      return null;
+      return null
     }
 
-    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString);
+    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString)
 
     if (!codeGroup) {
-      return null;
+      return null
     }
 
-    return codeGroup.text.long;
+    return codeGroup.text.long
   }
 
   /**
@@ -195,15 +201,15 @@ export class ConstantUtils {
    */
   static getMappedCodes(codeType: CodeType, searchString: string): string[] {
     if (!searchString) {
-      return null;
+      return null
     }
 
-    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString);
+    const codeGroup: ICodeGroup = this.getCodeGroup(codeType, searchString)
 
     if (!codeGroup) {
-      return null;
+      return null
     }
 
-    return codeGroup.mappedCodes;
+    return codeGroup.mappedCodes
   }
 }

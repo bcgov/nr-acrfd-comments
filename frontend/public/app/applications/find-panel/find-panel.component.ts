@@ -1,12 +1,12 @@
-import { Component, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Component, OnDestroy, Output, EventEmitter } from '@angular/core'
+import { Subject } from 'rxjs'
+import { takeUntil } from 'rxjs/operators'
 
-import { UrlService } from 'app/services/url.service';
-import { Filter, FilterUtils } from '../utils/filter';
-import { Panel } from '../utils/panel.enum';
-import { IUpdateEvent } from '../applications.component';
-import { IFiltersType } from 'app/services/application.service';
+import { UrlService } from 'app/services/url.service'
+import { Filter, FilterUtils } from '../utils/filter'
+import { Panel } from '../utils/panel.enum'
+import { IUpdateEvent } from '../applications.component'
+import { IFiltersType } from 'app/services/application.service'
 
 /**
  * Find side panel.
@@ -18,24 +18,26 @@ import { IFiltersType } from 'app/services/application.service';
 @Component({
   selector: 'app-find-panel',
   templateUrl: './find-panel.component.html',
-  styleUrls: ['./find-panel.component.scss']
+  styleUrls: ['./find-panel.component.scss'],
 })
 export class FindPanelComponent implements OnDestroy {
-  @Output() update = new EventEmitter<IUpdateEvent>();
+  @Output() update = new EventEmitter<IUpdateEvent>()
 
-  public filterHash: string;
+  public filterHash: string
 
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>()
 
-  public crownLandOrDispositionIDFilter = new Filter<string>({ filter: { queryParam: 'clidDtid', value: null } });
+  public crownLandOrDispositionIDFilter = new Filter<string>({
+    filter: { queryParam: 'clidDtid', value: null },
+  })
 
   constructor(public urlService: UrlService) {
     this.urlService.onNavEnd$.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => {
-      this.loadQueryParameters();
+      this.loadQueryParameters()
       if (this.areFiltersSet()) {
-        this.emitUpdate({ search: false, resetMap: false, hidePanel: false });
+        this.emitUpdate({ search: false, resetMap: false, hidePanel: false })
       }
-    });
+    })
   }
 
   /**
@@ -46,14 +48,14 @@ export class FindPanelComponent implements OnDestroy {
    * @memberof FindPanelComponent
    */
   public checkAndSetFiltersHash(): boolean {
-    const newFilterHash = FilterUtils.hashFilters(this.crownLandOrDispositionIDFilter);
+    const newFilterHash = FilterUtils.hashFilters(this.crownLandOrDispositionIDFilter)
 
     if (this.filterHash === newFilterHash) {
-      return false;
+      return false
     }
 
-    this.filterHash = newFilterHash;
-    return true;
+    this.filterHash = newFilterHash
+    return true
   }
 
   /**
@@ -63,7 +65,7 @@ export class FindPanelComponent implements OnDestroy {
    */
   public emitUpdate(updateEventOptions: IUpdateEvent) {
     if (this.checkAndSetFiltersHash()) {
-      this.update.emit({ ...updateEventOptions, filters: this.getFilters() });
+      this.update.emit({ ...updateEventOptions, filters: this.getFilters() })
     }
   }
 
@@ -74,8 +76,8 @@ export class FindPanelComponent implements OnDestroy {
    */
   public loadQueryParameters(): void {
     this.crownLandOrDispositionIDFilter.filter.value = this.urlService.getQueryParam(
-      this.crownLandOrDispositionIDFilter.filter.queryParam
-    );
+      this.crownLandOrDispositionIDFilter.filter.queryParam,
+    )
   }
 
   /**
@@ -85,7 +87,7 @@ export class FindPanelComponent implements OnDestroy {
    * @memberof FindPanelComponent
    */
   public getFilters(): IFiltersType {
-    return { clidDtid: this.crownLandOrDispositionIDFilter.filter.value };
+    return { clidDtid: this.crownLandOrDispositionIDFilter.filter.value }
   }
 
   /**
@@ -94,8 +96,8 @@ export class FindPanelComponent implements OnDestroy {
    * @memberof FindPanelComponent
    */
   public applyAllFilters() {
-    this.saveQueryParameters();
-    this.emitUpdate({ search: true, resetMap: false, hidePanel: false });
+    this.saveQueryParameters()
+    this.emitUpdate({ search: true, resetMap: false, hidePanel: false })
   }
 
   /**
@@ -104,8 +106,8 @@ export class FindPanelComponent implements OnDestroy {
    * @memberof ExplorePanelComponent
    */
   public applyAllFiltersMobile() {
-    this.saveQueryParameters();
-    this.emitUpdate({ search: true, resetMap: false, hidePanel: true });
+    this.saveQueryParameters()
+    this.emitUpdate({ search: true, resetMap: false, hidePanel: true })
   }
 
   /**
@@ -116,8 +118,8 @@ export class FindPanelComponent implements OnDestroy {
   public saveQueryParameters() {
     this.urlService.setQueryParam(
       this.crownLandOrDispositionIDFilter.filter.queryParam,
-      this.crownLandOrDispositionIDFilter.filter.value
-    );
+      this.crownLandOrDispositionIDFilter.filter.value,
+    )
   }
 
   /**
@@ -127,9 +129,9 @@ export class FindPanelComponent implements OnDestroy {
    * @memberof FindPanelComponent
    */
   public clear() {
-    this.clearAllFilters();
-    this.saveQueryParameters();
-    this.emitUpdate({ search: true, resetMap: true, hidePanel: false });
+    this.clearAllFilters()
+    this.saveQueryParameters()
+    this.emitUpdate({ search: true, resetMap: true, hidePanel: false })
   }
 
   /**
@@ -138,7 +140,7 @@ export class FindPanelComponent implements OnDestroy {
    * @memberof FindPanelComponent
    */
   public clearAllFilters() {
-    this.crownLandOrDispositionIDFilter.reset();
+    this.crownLandOrDispositionIDFilter.reset()
   }
   /**
    * Returns true if at least 1 filter is selected/populated, false otherwise.
@@ -147,11 +149,11 @@ export class FindPanelComponent implements OnDestroy {
    * @memberof FindPanelComponent
    */
   public areFiltersSet(): boolean {
-    return this.crownLandOrDispositionIDFilter.isFilterSet();
+    return this.crownLandOrDispositionIDFilter.isFilterSet()
   }
 
   public showExplorePanel() {
-    this.urlService.setFragment(Panel.Explore);
+    this.urlService.setFragment(Panel.Explore)
   }
 
   /**
@@ -160,7 +162,7 @@ export class FindPanelComponent implements OnDestroy {
    * @memberof FindPanelComponent
    */
   public ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    this.ngUnsubscribe.next()
+    this.ngUnsubscribe.complete()
   }
 }

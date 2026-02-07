@@ -7,5 +7,5 @@
 export enum Panel {
   find = 'find',
   Explore = 'explore',
-  details = 'details'
+  details = 'details',
 }

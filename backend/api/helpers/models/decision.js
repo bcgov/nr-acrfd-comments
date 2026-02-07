@@ -7,5 +7,5 @@ module.exports = require('../models')('Decision', {
   tags: [[{ type: String, trim: true, default: '[["sysadmin"]]' }]],
   name: { type: String, trim: true },
   decisionDate: { type: Date, default: Date.now },
-  isDeleted: { type: Boolean, default: false }
-});
+  isDeleted: { type: Boolean, default: false },
+})

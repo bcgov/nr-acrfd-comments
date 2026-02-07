@@ -9,4 +9,4 @@
  *  - Run this any time after description was removed: PRC-1029-2 for api/public AND PRC-1029 for admin
  */
 
-db.decisions.updateMany({}, { $unset: { description: 1 } });
+db.decisions.updateMany({}, { $unset: { description: 1 } })

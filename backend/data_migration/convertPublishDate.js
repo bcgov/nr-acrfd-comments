@@ -17,13 +17,13 @@ db.applications.aggregate([
       // if app has a Created Date, does nothing
       // if app doesn't have a Created Date but has a Publish Date, sets createdDate = publishDate
       // if app doesn't have a Created Date or Publish Date, sets createdDate = 'now' (should never happen)
-      createdDate: { $ifNull: ['$createdDate', { $ifNull: ['$publishDate', new Date()] }] }
-    }
+      createdDate: { $ifNull: ['$createdDate', { $ifNull: ['$publishDate', new Date()] }] },
+    },
   },
   // save as new collection
-  { $out: 'applications2' }
-]);
+  { $out: 'applications2' },
+])
 
 // 4. if OK, run the following:
 
-db.applications2.renameCollection('applications', true);
+db.applications2.renameCollection('applications', true)

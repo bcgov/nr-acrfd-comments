@@ -1,64 +1,66 @@
-const TTLSUtils = require('./ttlsUtils');
-const nock = require('nock');
-var _ = require('lodash');
+const TTLSUtils = require('./ttlsUtils')
+const nock = require('nock')
+var _ = require('lodash')
 
 describe('TTLSUtils', () => {
   const webADENock = {
     domain: 'https://t1api.nrs.gov.bc.ca',
-    path: '/oauth2/v1/oauth/token?grant_type=client_credentials&disableDeveloperFilter=true&scope=TTLS.*',
+    path:
+      '/oauth2/v1/oauth/token?grant_type=client_credentials&disableDeveloperFilter=true&scope=TTLS.*',
     headers: {
       reqheaders: {
-        authorization: x => {
-          return (x && true) || false;
-        }
-      }
+        authorization: (x) => {
+          return (x && true) || false
+        },
+      },
     },
     success_response: {
       access_token: 'ACCESS_TOKEN',
       token_type: 'bearer',
-      expires_in: 43199
+      expires_in: 43199,
     },
     error_response: {
-      msg: 'An error occurred!'
-    }
-  };
+      msg: 'An error occurred!',
+    },
+  }
 
   describe('loginWebADE', () => {
-    const webADEApi = nock(webADENock.domain, webADENock.headers);
+    const webADEApi = nock(webADENock.domain, webADENock.headers)
 
     describe('When the webADE call returns successfully', () => {
       beforeEach(() => {
-        webADEApi.get(webADENock.path).reply(200, webADENock.success_response);
-      });
+        webADEApi.get(webADENock.path).reply(200, webADENock.success_response)
+      })
 
-      it('returns the access token', done => {
-        TTLSUtils.loginWebADE().then(response => {
-          expect(response).toEqual('ACCESS_TOKEN');
-          done();
-        });
-      });
-    });
+      it('returns the access token', (done) => {
+        TTLSUtils.loginWebADE().then((response) => {
+          expect(response).toEqual('ACCESS_TOKEN')
+          done()
+        })
+      })
+    })
 
     describe('When the webADE call returns with a non-200 status code', () => {
       beforeEach(() => {
-        webADEApi.get(webADENock.path).reply(400, webADENock.error_response);
-      });
+        webADEApi.get(webADENock.path).reply(400, webADENock.error_response)
+      })
 
-      it('rejects the promise', done => {
-        TTLSUtils.loginWebADE().catch(response => {
-          expect(response).toEqual({ code: 400 });
-          done();
-        });
-      });
-    });
-  });
+      it('rejects the promise', (done) => {
+        TTLSUtils.loginWebADE().catch((response) => {
+          expect(response).toEqual({ code: 400 })
+          done()
+        })
+      })
+    })
+  })
 
   describe('getApplicationByFilenumber', () => {
-    const webADEApi = nock(webADENock.domain);
-    const accessToken = 'ACCESS_TOKEN';
-    const fileNumber = '99999';
+    const webADEApi = nock(webADENock.domain)
+    const accessToken = 'ACCESS_TOKEN'
+    const fileNumber = '99999'
 
-    const fileSearchPath = '/ttls-api/v1/landUseApplications?fileNumber=99999&pageNumber=1&pageRowCount=100';
+    const fileSearchPath =
+      '/ttls-api/v1/landUseApplications?fileNumber=99999&pageNumber=1&pageRowCount=100'
     const ttlsApiResponse = {
       '@type': 'LandUseApplicationResources',
       links: [
@@ -67,8 +69,8 @@ describe('TTLSUtils', () => {
           rel: 'self',
           href:
             'https://api.nrs.gov.bc.ca/ttls-api/v1/landUseApplications?fileNumber=7410005&stage=&status=&type=&purpose=&location=&received=&updated=&pageNumber=1&pageRowCount=1',
-          method: 'GET'
-        }
+          method: 'GET',
+        },
       ],
       pageNumber: 1,
       pageRowCount: 1,
@@ -88,25 +90,25 @@ describe('TTLSUtils', () => {
             '@type': 'StageCodeResource',
             links: [],
             code: 'T',
-            description: 'TENURE'
+            description: 'TENURE',
           },
           businessUnit: {
             '@type': 'BusinessUnitResource',
             links: [],
             id: 7,
-            name: 'Super evil corporation'
+            name: 'Super evil corporation',
           },
           statusCode: {
             '@type': 'StatusCodeResource',
             links: [],
             code: 'GS',
-            description: 'DISPOSITION IN GOOD STANDING'
+            description: 'DISPOSITION IN GOOD STANDING',
           },
           reasonCode: {
             '@type': 'ReasonCodeResource',
             links: [],
             code: 'C',
-            description: 'AMENDMENT APPROVED - APPLICATION'
+            description: 'AMENDMENT APPROVED - APPLICATION',
           },
           landUseTypeCode: {
             '@type': 'LandUseTypeCodeResource',
@@ -118,9 +120,9 @@ describe('TTLSUtils', () => {
                 '@type': 'LandUseSubTypeCodeResource',
                 links: [],
                 code: '2',
-                description: 'First land use sub type'
-              }
-            ]
+                description: 'First land use sub type',
+              },
+            ],
           },
           purposeCode: {
             '@type': 'PurposeCodeResource',
@@ -132,70 +134,74 @@ describe('TTLSUtils', () => {
                 '@type': 'SubPurposeCodeResource',
                 links: [],
                 code: '6',
-                description: 'This is the first subpurpose description'
-              }
-            ]
+                description: 'This is the first subpurpose description',
+              },
+            ],
           },
           documents: [],
           interestedParties: [],
           shapes: [],
           interestParcels: [],
           statusHistory: [],
-          parkReasonHistory: []
-        }
-      ]
-    };
+          parkReasonHistory: [],
+        },
+      ],
+    }
 
     describe('When the api call returns successfully', () => {
       beforeEach(() => {
-        webADEApi.get(fileSearchPath).reply(200, ttlsApiResponse);
-      });
+        webADEApi.get(fileSearchPath).reply(200, ttlsApiResponse)
+      })
 
-      it('returns an application with the right tenure types and purposes', done => {
-        TTLSUtils.getApplicationByFilenumber(accessToken, fileNumber).then(response => {
-          expect(response.length).toEqual(1);
-          let firstApplication = response[0];
-          expect(firstApplication.TENURE_PURPOSE).toEqual('I have a very important purpose in life!');
-          expect(firstApplication.TENURE_SUBPURPOSE).toEqual('This is the first subpurpose description');
-          expect(firstApplication.TENURE_TYPE).toEqual('Yes, this is the land use type code');
-          expect(firstApplication.TENURE_SUBTYPE).toEqual('First land use sub type');
+      it('returns an application with the right tenure types and purposes', (done) => {
+        TTLSUtils.getApplicationByFilenumber(accessToken, fileNumber).then((response) => {
+          expect(response.length).toEqual(1)
+          let firstApplication = response[0]
+          expect(firstApplication.TENURE_PURPOSE).toEqual(
+            'I have a very important purpose in life!',
+          )
+          expect(firstApplication.TENURE_SUBPURPOSE).toEqual(
+            'This is the first subpurpose description',
+          )
+          expect(firstApplication.TENURE_TYPE).toEqual('Yes, this is the land use type code')
+          expect(firstApplication.TENURE_SUBTYPE).toEqual('First land use sub type')
 
-          done();
-        });
-      });
+          done()
+        })
+      })
 
-      it('returns an application with the expected tenure status, reason, stage, and location attrs', done => {
-        TTLSUtils.getApplicationByFilenumber(accessToken, fileNumber).then(response => {
-          expect(response.length).toEqual(1);
-          let firstApplication = response[0];
+      it('returns an application with the expected tenure status, reason, stage, and location attrs', (done) => {
+        TTLSUtils.getApplicationByFilenumber(accessToken, fileNumber).then((response) => {
+          expect(response.length).toEqual(1)
+          let firstApplication = response[0]
 
-          expect(firstApplication.TENURE_STATUS).toEqual('DISPOSITION IN GOOD STANDING');
-          expect(firstApplication.TENURE_REASON).toEqual('AMENDMENT APPROVED - APPLICATION');
-          expect(firstApplication.TENURE_STAGE).toEqual('TENURE');
-          expect(firstApplication.TENURE_LOCATION).toEqual('Over the River and through the woods');
+          expect(firstApplication.TENURE_STATUS).toEqual('DISPOSITION IN GOOD STANDING')
+          expect(firstApplication.TENURE_REASON).toEqual('AMENDMENT APPROVED - APPLICATION')
+          expect(firstApplication.TENURE_STAGE).toEqual('TENURE')
+          expect(firstApplication.TENURE_LOCATION).toEqual('Over the River and through the woods')
 
-          done();
-        });
-      });
+          done()
+        })
+      })
 
-      it('returns an application with the correct additional attributes', done => {
-        TTLSUtils.getApplicationByFilenumber(accessToken, fileNumber).then(response => {
-          expect(response.length).toEqual(1);
-          let firstApplication = response[0];
-          expect(firstApplication.RESPONSIBLE_BUSINESS_UNIT).toEqual('Super evil corporation');
-          expect(firstApplication.CROWN_LANDS_FILE).toEqual('888888');
-          expect(firstApplication.DISPOSITION_TRANSACTION_SID).toEqual(777777);
+      it('returns an application with the correct additional attributes', (done) => {
+        TTLSUtils.getApplicationByFilenumber(accessToken, fileNumber).then((response) => {
+          expect(response.length).toEqual(1)
+          let firstApplication = response[0]
+          expect(firstApplication.RESPONSIBLE_BUSINESS_UNIT).toEqual('Super evil corporation')
+          expect(firstApplication.CROWN_LANDS_FILE).toEqual('888888')
+          expect(firstApplication.DISPOSITION_TRANSACTION_SID).toEqual(777777)
 
-          done();
-        });
-      });
-    });
-  });
+          done()
+        })
+      })
+    })
+  })
 
   describe('getApplicationByDispositionID', () => {
-    const webADEApi = nock(webADENock.domain);
-    const accessToken = 'ACCESS_TOKEN';
-    const dispId = '666666';
+    const webADEApi = nock(webADENock.domain)
+    const accessToken = 'ACCESS_TOKEN'
+    const dispId = '666666'
     const individualPartyObj = {
       '@type': 'ApplicationInterestedPartyResource',
       links: [],
@@ -203,9 +209,9 @@ describe('TTLSUtils', () => {
       interestedPartyType: 'I',
       individual: {
         firstName: 'John',
-        lastName: 'Doe'
-      }
-    };
+        lastName: 'Doe',
+      },
+    }
     const organizationPartyObj = {
       '@type': 'ApplicationInterestedPartyResource',
       links: [],
@@ -214,11 +220,12 @@ describe('TTLSUtils', () => {
       individual: null,
       organization: {
         divisionBranch: 'Brasil Tax Evasion',
-        legalName: 'Operation Car Wash'
-      }
-    };
+        legalName: 'Operation Car Wash',
+      },
+    }
 
-    const landUseAppSearchPath = '/ttls-api/v1/landUseApplications/666666?pageNumber=1&pageRowCount=100';
+    const landUseAppSearchPath =
+      '/ttls-api/v1/landUseApplications/666666?pageNumber=1&pageRowCount=100'
     const ttlsApiResponse = {
       '@type': 'LandUseApplicationResource',
       links: [
@@ -226,8 +233,8 @@ describe('TTLSUtils', () => {
           '@type': 'RelLink',
           rel: 'self',
           href: 'https://api.nrs.gov.bc.ca/ttls-api/v1/landUseApplications/933249',
-          method: 'GET'
-        }
+          method: 'GET',
+        },
       ],
       landUseApplicationId: 666666,
       clientReferenceNumber: '100244978',
@@ -239,25 +246,25 @@ describe('TTLSUtils', () => {
         '@type': 'StageCodeResource',
         links: [],
         code: 'A',
-        description: 'TENURE'
+        description: 'TENURE',
       },
       businessUnit: {
         '@type': 'BusinessUnitResource',
         links: [],
         id: 6,
-        name: 'Super evil corporation'
+        name: 'Super evil corporation',
       },
       statusCode: {
         '@type': 'StatusCodeResource',
         links: [],
         code: 'AC',
-        description: 'DISPOSITION IN GOOD STANDING'
+        description: 'DISPOSITION IN GOOD STANDING',
       },
       reasonCode: {
         '@type': 'ReasonCodeResource',
         links: [],
         code: 'C',
-        description: 'AMENDMENT APPROVED - APPLICATION'
+        description: 'AMENDMENT APPROVED - APPLICATION',
       },
       landUseTypeCode: {
         '@type': 'LandUseTypeCodeResource',
@@ -269,9 +276,9 @@ describe('TTLSUtils', () => {
             '@type': 'LandUseSubTypeCodeResource',
             links: [],
             code: '1',
-            description: 'First land use sub type'
-          }
-        ]
+            description: 'First land use sub type',
+          },
+        ],
       },
       purposeCode: {
         '@type': 'PurposeCodeResource',
@@ -283,9 +290,9 @@ describe('TTLSUtils', () => {
             '@type': 'SubPurposeCodeResource',
             links: [],
             code: '6',
-            description: 'This is the first subpurpose description'
-          }
-        ]
+            description: 'This is the first subpurpose description',
+          },
+        ],
       },
       documents: [],
       interestedParties: [individualPartyObj, organizationPartyObj],
@@ -304,8 +311,8 @@ describe('TTLSUtils', () => {
           areaInSquareMetres: 33855.6279054274,
           areaLengthInMetres: 740.122691165678,
           wktGeometry:
-            'POLYGON ((843405.474983077 1481115.65441351, 843566.561526555 1481059.93430167, 843481.388035521 1480882.29620365, 843313.798870558 1480944.97363803, 843405.474983077 1481115.65441351))'
-        }
+            'POLYGON ((843405.474983077 1481115.65441351, 843566.561526555 1481059.93430167, 843481.388035521 1480882.29620365, 843313.798870558 1480944.97363803, 843405.474983077 1481115.65441351))',
+        },
       ],
       statusHistory: [
         {
@@ -314,184 +321,190 @@ describe('TTLSUtils', () => {
           code: 'AC',
           description: 'ACCEPTED',
           effectiveDate: 1527878179000,
-          expiryDate: null
-        }
+          expiryDate: null,
+        },
       ],
-      parkReasonHistory: []
-    };
+      parkReasonHistory: [],
+    }
 
     describe('When the api call returns successfully', () => {
       beforeEach(() => {
-        webADEApi.get(landUseAppSearchPath).reply(200, ttlsApiResponse);
-      });
+        webADEApi.get(landUseAppSearchPath).reply(200, ttlsApiResponse)
+      })
 
-      it('returns an application with the right tenure types and purposes', done => {
-        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(response => {
-          let firstApplication = response;
-          expect(firstApplication.TENURE_PURPOSE).toEqual('I have a very important purpose in life!');
-          expect(firstApplication.TENURE_SUBPURPOSE).toEqual('This is the first subpurpose description');
-          expect(firstApplication.TENURE_TYPE).toEqual('Yes, this is the land use type code');
-          expect(firstApplication.TENURE_SUBTYPE).toEqual('First land use sub type');
+      it('returns an application with the right tenure types and purposes', (done) => {
+        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((response) => {
+          let firstApplication = response
+          expect(firstApplication.TENURE_PURPOSE).toEqual(
+            'I have a very important purpose in life!',
+          )
+          expect(firstApplication.TENURE_SUBPURPOSE).toEqual(
+            'This is the first subpurpose description',
+          )
+          expect(firstApplication.TENURE_TYPE).toEqual('Yes, this is the land use type code')
+          expect(firstApplication.TENURE_SUBTYPE).toEqual('First land use sub type')
 
-          done();
-        });
-      });
+          done()
+        })
+      })
 
-      it('returns an application with the expected tenure status, stage, and location attrs', done => {
-        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(response => {
-          let firstApplication = response;
+      it('returns an application with the expected tenure status, stage, and location attrs', (done) => {
+        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((response) => {
+          let firstApplication = response
 
-          expect(firstApplication.TENURE_STATUS).toEqual('DISPOSITION IN GOOD STANDING');
-          expect(firstApplication.TENURE_REASON).toEqual('AMENDMENT APPROVED - APPLICATION');
-          expect(firstApplication.TENURE_STAGE).toEqual('TENURE');
-          expect(firstApplication.TENURE_LOCATION).toEqual('Over the River and through the woods');
+          expect(firstApplication.TENURE_STATUS).toEqual('DISPOSITION IN GOOD STANDING')
+          expect(firstApplication.TENURE_REASON).toEqual('AMENDMENT APPROVED - APPLICATION')
+          expect(firstApplication.TENURE_STAGE).toEqual('TENURE')
+          expect(firstApplication.TENURE_LOCATION).toEqual('Over the River and through the woods')
 
-          done();
-        });
-      });
+          done()
+        })
+      })
 
-      it('returns an application with the correct additional attributes', done => {
-        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(response => {
-          let firstApplication = response;
-          expect(firstApplication.RESPONSIBLE_BUSINESS_UNIT).toEqual('Super evil corporation');
-          expect(firstApplication.CROWN_LANDS_FILE).toEqual('888888');
-          expect(firstApplication.DISPOSITION_TRANSACTION_SID).toEqual(dispId);
+      it('returns an application with the correct additional attributes', (done) => {
+        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((response) => {
+          let firstApplication = response
+          expect(firstApplication.RESPONSIBLE_BUSINESS_UNIT).toEqual('Super evil corporation')
+          expect(firstApplication.CROWN_LANDS_FILE).toEqual('888888')
+          expect(firstApplication.DISPOSITION_TRANSACTION_SID).toEqual(dispId)
 
-          done();
-        });
-      });
+          done()
+        })
+      })
 
-      it('sets the statusHistoryEffectiveDate', done => {
-        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(response => {
-          expect(response.statusHistoryEffectiveDate).toEqual(new Date(1527878179000));
+      it('sets the statusHistoryEffectiveDate', (done) => {
+        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((response) => {
+          expect(response.statusHistoryEffectiveDate).toEqual(new Date(1527878179000))
 
-          done();
-        });
-      });
+          done()
+        })
+      })
 
       describe('parcels', () => {
         // TODO: Figure out how to to properly test centroid and areaHectares calculation
-        it('sets the areaHectares and centroid properties', done => {
-          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(application => {
-            expect(application.areaHectares).toEqual(3.333);
-            expect(application.centroid).not.toBeNull();
+        it('sets the areaHectares and centroid properties', (done) => {
+          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((application) => {
+            expect(application.areaHectares).toEqual(3.333)
+            expect(application.centroid).not.toBeNull()
 
-            done();
-          });
-        });
+            done()
+          })
+        })
 
-        it('it adds parcels to the application', done => {
-          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(application => {
-            expect(application.parcels).not.toBeNull();
-            expect(application.parcels.length).toEqual(1);
-            const firstParcel = application.parcels[0];
-            expect(firstParcel.type).toEqual('Feature');
+        it('it adds parcels to the application', (done) => {
+          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((application) => {
+            expect(application.parcels).not.toBeNull()
+            expect(application.parcels.length).toEqual(1)
+            const firstParcel = application.parcels[0]
+            expect(firstParcel.type).toEqual('Feature')
 
-            done();
-          });
-        });
+            done()
+          })
+        })
 
-        it('it sets the feature tenure properties correctly on the parcel', done => {
-          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(application => {
-            expect(application.parcels.length).toEqual(1);
-            const firstParcel = application.parcels[0];
-            const properties = firstParcel.properties;
-            expect(properties.TENURE_LEGAL_DESCRIPTION).toEqual('READ THESE BORING LEGAL TERMS.');
-            expect(properties.TENURE_AREA_IN_HECTARES).toEqual(3.333);
-            expect(properties.INTRID_SID).toEqual(12345);
-            expect(properties.TENURE_EXPIRY).toEqual(1527878179000);
+        it('it sets the feature tenure properties correctly on the parcel', (done) => {
+          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((application) => {
+            expect(application.parcels.length).toEqual(1)
+            const firstParcel = application.parcels[0]
+            const properties = firstParcel.properties
+            expect(properties.TENURE_LEGAL_DESCRIPTION).toEqual('READ THESE BORING LEGAL TERMS.')
+            expect(properties.TENURE_AREA_IN_HECTARES).toEqual(3.333)
+            expect(properties.INTRID_SID).toEqual(12345)
+            expect(properties.TENURE_EXPIRY).toEqual(1527878179000)
 
-            done();
-          });
-        });
+            done()
+          })
+        })
 
-        it('it sets the feature properties correctly on the parcel', done => {
-          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(application => {
-            expect(application.parcels.length).toEqual(1);
-            const firstParcel = application.parcels[0];
-            const properties = firstParcel.properties;
+        it('it sets the feature properties correctly on the parcel', (done) => {
+          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((application) => {
+            expect(application.parcels.length).toEqual(1)
+            const firstParcel = application.parcels[0]
+            const properties = firstParcel.properties
 
-            expect(properties.FEATURE_CODE).toEqual('FL98000100');
-            expect(properties.FEATURE_AREA_SQM).toEqual(33855.6279054274);
-            expect(properties.FEATURE_LENGTH_M).toEqual(740.122691165678);
+            expect(properties.FEATURE_CODE).toEqual('FL98000100')
+            expect(properties.FEATURE_AREA_SQM).toEqual(33855.6279054274)
+            expect(properties.FEATURE_LENGTH_M).toEqual(740.122691165678)
 
-            done();
-          });
-        });
+            done()
+          })
+        })
 
-        it('sets the crs properties name', done => {
-          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(application => {
-            expect(application.parcels.length).toEqual(1);
-            const firstParcel = application.parcels[0];
-            const crs = firstParcel.crs;
-            expect(crs).not.toBeNull();
-            expect(crs.properties.name).toEqual('urn:ogc:def:crs:EPSG::4326');
+        it('sets the crs properties name', (done) => {
+          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((application) => {
+            expect(application.parcels.length).toEqual(1)
+            const firstParcel = application.parcels[0]
+            const crs = firstParcel.crs
+            expect(crs).not.toBeNull()
+            expect(crs.properties.name).toEqual('urn:ogc:def:crs:EPSG::4326')
 
-            done();
-          });
-        });
+            done()
+          })
+        })
 
         // Not sure how to go about testing this, so I'm just testing that something gets set.
-        it('sets the geometry', done => {
-          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(application => {
-            expect(application.parcels.length).toEqual(1);
-            const firstParcel = application.parcels[0];
-            const geometry = firstParcel.geometry;
-            expect(geometry).not.toBeNull();
-            expect(geometry.type).toEqual('GeometryCollection');
-            expect(geometry.geometries).toBeDefined();
-            expect(geometry.geometries[0].type).toEqual('Polygon');
-            expect(geometry.geometries[0].coordinates).toBeDefined();
+        it('sets the geometry', (done) => {
+          TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((application) => {
+            expect(application.parcels.length).toEqual(1)
+            const firstParcel = application.parcels[0]
+            const geometry = firstParcel.geometry
+            expect(geometry).not.toBeNull()
+            expect(geometry.type).toEqual('GeometryCollection')
+            expect(geometry.geometries).toBeDefined()
+            expect(geometry.geometries[0].type).toEqual('Polygon')
+            expect(geometry.geometries[0].coordinates).toBeDefined()
 
-            done();
-          });
-        });
-      });
+            done()
+          })
+        })
+      })
 
       describe('interestedParties', () => {
         describe('with an individual party type object', () => {
-          it('it adds the individual party object to the interestedParties array', done => {
-            TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(application => {
-              expect(application.interestedParties.length).toEqual(2);
-              const individualParty = _.find(application.interestedParties, { interestedPartyType: 'I' });
-              expect(individualParty.firstName).toEqual('John');
-              expect(individualParty.lastName).toEqual('Doe');
-              expect(individualParty.interestedPartyType).toEqual('I');
+          it('it adds the individual party object to the interestedParties array', (done) => {
+            TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((application) => {
+              expect(application.interestedParties.length).toEqual(2)
+              const individualParty = _.find(application.interestedParties, {
+                interestedPartyType: 'I',
+              })
+              expect(individualParty.firstName).toEqual('John')
+              expect(individualParty.lastName).toEqual('Doe')
+              expect(individualParty.interestedPartyType).toEqual('I')
 
-              done();
-            });
-          });
-        });
+              done()
+            })
+          })
+        })
 
         describe('with an organization party type object', () => {
-          it('it adds the organization party object to the interestedParties array', done => {
-            TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then(application => {
-              expect(application.interestedParties.length).toEqual(2);
-              const orgParty = _.find(application.interestedParties, { interestedPartyType: 'O' });
-              expect(orgParty.legalName).toEqual('Operation Car Wash');
-              expect(orgParty.divisionBranch).toEqual('Brasil Tax Evasion');
-              expect(orgParty.interestedPartyType).toEqual('O');
+          it('it adds the organization party object to the interestedParties array', (done) => {
+            TTLSUtils.getApplicationByDispositionID(accessToken, dispId).then((application) => {
+              expect(application.interestedParties.length).toEqual(2)
+              const orgParty = _.find(application.interestedParties, { interestedPartyType: 'O' })
+              expect(orgParty.legalName).toEqual('Operation Car Wash')
+              expect(orgParty.divisionBranch).toEqual('Brasil Tax Evasion')
+              expect(orgParty.interestedPartyType).toEqual('O')
 
-              done();
-            });
-          });
-        });
-      });
-    });
+              done()
+            })
+          })
+        })
+      })
+    })
 
     describe('when the api call returns with a non-200 status code', () => {
       beforeEach(() => {
-        webADEApi.get(landUseAppSearchPath).reply(500, { error: 'something went wrong' });
-      });
+        webADEApi.get(landUseAppSearchPath).reply(500, { error: 'something went wrong' })
+      })
 
-      it('it rejects with an error object', done => {
-        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).catch(error => {
-          expect(error).not.toBeNull();
-          expect(error.code).toEqual(500);
+      it('it rejects with an error object', (done) => {
+        TTLSUtils.getApplicationByDispositionID(accessToken, dispId).catch((error) => {
+          expect(error).not.toBeNull()
+          expect(error.code).toEqual(500)
 
-          done();
-        });
-      });
-    });
-  });
-});
+          done()
+        })
+      })
+    })
+  })
+})

@@ -1,4 +1,4 @@
-import * as hash from 'object-hash';
+import * as hash from 'object-hash'
 
 /**
  * Basic required filter fields.
@@ -14,7 +14,7 @@ export interface IFilterFields<T> {
    * @type {string}
    * @memberof IFilterFields
    */
-  queryParam: string;
+  queryParam: string
 
   /**
    * Filter value.
@@ -22,13 +22,13 @@ export interface IFilterFields<T> {
    * @type {T}
    * @memberof IFilterFields
    */
-  value: T;
+  value: T
 }
 
 export interface IFilter {
-  getQueryParamsString(): string;
-  isFilterSet(): boolean;
-  reset(): void;
+  getQueryParamsString(): string
+  isFilterSet(): boolean
+  reset(): void
 }
 
 /**
@@ -39,10 +39,10 @@ export interface IFilter {
  * @template T
  */
 export class Filter<T> implements IFilter {
-  public filter: IFilterFields<T>;
+  public filter: IFilterFields<T>
 
   constructor({ filter }: { filter: IFilterFields<T> }) {
-    this.filter = filter;
+    this.filter = filter
   }
 
   /**
@@ -54,10 +54,10 @@ export class Filter<T> implements IFilter {
    */
   public getQueryParamsString(): string {
     if (!this.filter.value) {
-      return '';
+      return ''
     }
 
-    return `${this.filter.queryParam}=${this.filter.value}`;
+    return `${this.filter.queryParam}=${this.filter.value}`
   }
 
   /**
@@ -67,7 +67,7 @@ export class Filter<T> implements IFilter {
    * @memberof Filter
    */
   public isFilterSet(): boolean {
-    return !!this.filter.value;
+    return !!this.filter.value
   }
 
   /**
@@ -76,7 +76,7 @@ export class Filter<T> implements IFilter {
    * @memberof Filter
    */
   public reset(): void {
-    this.filter.value = null;
+    this.filter.value = null
   }
 }
 
@@ -95,11 +95,11 @@ export interface IMultiFilterFields<T> extends IFilterFields<T> {
    * @type {string}
    * @memberof IFilterFields
    */
-  displayString: string;
+  displayString: string
 }
 
 export interface IMultiFilter extends IFilter {
-  getQueryParamsArray(): string[];
+  getQueryParamsArray(): string[]
 }
 
 /**
@@ -109,12 +109,18 @@ export interface IMultiFilter extends IFilter {
  * @class MultiFilter<boolean>
  */
 export class MultiFilter<T> implements IMultiFilter {
-  public queryParamsKey: string;
-  public filters: Array<IMultiFilterFields<T>>;
+  public queryParamsKey: string
+  public filters: Array<IMultiFilterFields<T>>
 
-  constructor({ queryParamsKey, filters }: { queryParamsKey: string; filters: Array<IMultiFilterFields<T>> }) {
-    this.queryParamsKey = queryParamsKey;
-    this.filters = filters;
+  constructor({
+    queryParamsKey,
+    filters,
+  }: {
+    queryParamsKey: string
+    filters: Array<IMultiFilterFields<T>>
+  }) {
+    this.queryParamsKey = queryParamsKey
+    this.filters = filters
   }
 
   /**
@@ -126,7 +132,7 @@ export class MultiFilter<T> implements IMultiFilter {
    * @memberof MultiFilter<boolean>
    */
   public getQueryParamsArray(): string[] {
-    return this.filters.filter(filter => filter.value).map(filter => filter.queryParam);
+    return this.filters.filter((filter) => filter.value).map((filter) => filter.queryParam)
   }
 
   /**
@@ -140,9 +146,11 @@ export class MultiFilter<T> implements IMultiFilter {
    */
   public getQueryParamsString(): string {
     // get all filters that have a non-null/non-undefined value
-    const selectedFilters: Array<IMultiFilterFields<T>> = this.filters.filter(filter => filter.value);
+    const selectedFilters: Array<IMultiFilterFields<T>> = this.filters.filter(
+      (filter) => filter.value,
+    )
 
-    return selectedFilters.map(filter => filter.queryParam).join('|');
+    return selectedFilters.map((filter) => filter.queryParam).join('|')
   }
 
   /**
@@ -152,7 +160,7 @@ export class MultiFilter<T> implements IMultiFilter {
    * @memberof MultiFilter<boolean>
    */
   public isFilterSet(): boolean {
-    return this.filters.filter(filter => filter.value).length > 0;
+    return this.filters.filter((filter) => filter.value).length > 0
   }
 
   /**
@@ -161,16 +169,16 @@ export class MultiFilter<T> implements IMultiFilter {
    * @memberof MultiFilter<boolean>
    */
   public reset(): void {
-    this.filters.forEach(filter => (filter.value = null));
+    this.filters.forEach((filter) => (filter.value = null))
   }
 }
 
 export class FilterUtils {
   public static hashFilters(...filters: IFilter[]) {
     if (!filters || filters.length <= 0) {
-      return hash({});
+      return hash({})
     }
 
-    return hash(filters);
+    return hash(filters)
   }
 }

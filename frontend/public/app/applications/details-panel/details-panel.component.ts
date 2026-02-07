@@ -1,15 +1,15 @@
-import { Component, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Component, OnDestroy, Output, EventEmitter } from '@angular/core'
+import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap'
+import { Subject } from 'rxjs'
+import { takeUntil } from 'rxjs/operators'
 
-import { CommentModalComponent } from 'app/comment-modal/comment-modal.component';
-import { Application } from 'app/models/application';
-import { ApplicationService } from 'app/services/application.service';
-import { CommentPeriodService } from 'app/services/commentperiod.service';
-import { ApiService } from 'app/services/api';
-import { UrlService } from 'app/services/url.service';
-import { Filter } from '../utils/filter';
+import { CommentModalComponent } from 'app/comment-modal/comment-modal.component'
+import { Application } from 'app/models/application'
+import { ApplicationService } from 'app/services/application.service'
+import { CommentPeriodService } from 'app/services/commentperiod.service'
+import { ApiService } from 'app/services/api'
+import { UrlService } from 'app/services/url.service'
+import { Filter } from '../utils/filter'
 
 /**
  * Details side panel.
@@ -21,40 +21,43 @@ import { Filter } from '../utils/filter';
 @Component({
   selector: 'app-details-panel',
   templateUrl: './details-panel.component.html',
-  styleUrls: ['./details-panel.component.scss']
+  styleUrls: ['./details-panel.component.scss'],
 })
 export class DetailsPanelComponent implements OnDestroy {
-  @Output() update = new EventEmitter();
+  @Output() update = new EventEmitter()
 
-  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  private ngUnsubscribe: Subject<boolean> = new Subject<boolean>()
 
-  public addCommentModal: NgbModalRef = null;
+  public addCommentModal: NgbModalRef = null
 
-  public isAppLoading: boolean;
-  public applicationId: number = null;
-  public application: Application = null;
-  public currentPeriodDaysRemainingCount = 0;
+  public isAppLoading: boolean
+  public applicationId: number = null
+  public application: Application = null
+  public currentPeriodDaysRemainingCount = 0
 
-  public applicationIdFilter = new Filter<string>({ filter: { queryParam: 'id', value: null } });
+  public applicationIdFilter = new Filter<string>({ filter: { queryParam: 'id', value: null } })
 
   constructor(
     public modalService: NgbModal,
     public applicationService: ApplicationService, // used in template
     public commentPeriodService: CommentPeriodService, // used in template
     public api: ApiService, // used in template
-    public urlService: UrlService
+    public urlService: UrlService,
   ) {
     // watch for URL param changes
     this.urlService.onNavEnd$.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => {
-      this.loadQueryParameters();
+      this.loadQueryParameters()
       if (!this.applicationIdFilter.filter.value) {
         // no application to display
-        this.application = null;
-      } else if (!this.application || this.application._id !== this.applicationIdFilter.filter.value) {
+        this.application = null
+      } else if (
+        !this.application ||
+        this.application._id !== this.applicationIdFilter.filter.value
+      ) {
         // no application yet selected, or different application selected
-        this.getApplication();
+        this.getApplication()
       }
-    });
+    })
   }
 
   /**
@@ -64,7 +67,7 @@ export class DetailsPanelComponent implements OnDestroy {
    * @memberof DetailsPanelComponent
    */
   public CurrentPeriodDaysRemainingCount(): number {
-    return this.application.currentPeriod ? this.application.currentPeriod['daysRemaining'] : 0;
+    return this.application.currentPeriod ? this.application.currentPeriod['daysRemaining'] : 0
   }
 
   /**
@@ -73,33 +76,33 @@ export class DetailsPanelComponent implements OnDestroy {
    * @memberof DetailsPanelComponent
    */
   public getApplication() {
-    this.isAppLoading = true;
+    this.isAppLoading = true
 
     // load entire application so we get extra data (documents, decision, features)
     this.applicationService
       .getById(this.applicationIdFilter.filter.value, true)
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(
-        application => {
+        (application) => {
           if (application) {
-            this.application = application;
+            this.application = application
 
-            this.isAppLoading = false;
+            this.isAppLoading = false
 
-            this.applicationIdFilter.filter.value = this.application._id;
-            this.saveQueryParameters();
+            this.applicationIdFilter.filter.value = this.application._id
+            this.saveQueryParameters()
 
-            this.update.emit(this.application);
+            this.update.emit(this.application)
 
-            this.currentPeriodDaysRemainingCount = this.CurrentPeriodDaysRemainingCount();
+            this.currentPeriodDaysRemainingCount = this.CurrentPeriodDaysRemainingCount()
           }
         },
-        error => {
-          this.isAppLoading = false;
-          console.log('error =', error);
-          alert("Uh-oh, couldn't load application");
-        }
-      );
+        (error) => {
+          this.isAppLoading = false
+          console.log('error =', error)
+          alert("Uh-oh, couldn't load application")
+        },
+      )
   }
 
   /**
@@ -113,21 +116,22 @@ export class DetailsPanelComponent implements OnDestroy {
       this.addCommentModal = this.modalService.open(CommentModalComponent, {
         backdrop: 'static',
         size: 'lg',
-        windowClass: 'comment-modal'
-      });
+        windowClass: 'comment-modal',
+      })
       // set input parameter
-      (this.addCommentModal.componentInstance as CommentModalComponent).currentPeriod = this.application.currentPeriod;
+      ;(this.addCommentModal
+        .componentInstance as CommentModalComponent).currentPeriod = this.application.currentPeriod
       // check result
       this.addCommentModal.result.then(
         () => {
           // saved
-          this.addCommentModal = null; // for next time
+          this.addCommentModal = null // for next time
         },
         () => {
           // dismissed
-          this.addCommentModal = null; // for next time
-        }
-      );
+          this.addCommentModal = null // for next time
+        },
+      )
     }
   }
 
@@ -137,7 +141,9 @@ export class DetailsPanelComponent implements OnDestroy {
    * @memberof DetailsPanelComponent
    */
   public loadQueryParameters(): void {
-    this.applicationIdFilter.filter.value = this.urlService.getQueryParam(this.applicationIdFilter.filter.queryParam);
+    this.applicationIdFilter.filter.value = this.urlService.getQueryParam(
+      this.applicationIdFilter.filter.queryParam,
+    )
   }
 
   /**
@@ -146,7 +152,10 @@ export class DetailsPanelComponent implements OnDestroy {
    * @memberof DetailsPanelComponent
    */
   public saveQueryParameters() {
-    this.urlService.setQueryParam(this.applicationIdFilter.filter.queryParam, this.applicationIdFilter.filter.value);
+    this.urlService.setQueryParam(
+      this.applicationIdFilter.filter.queryParam,
+      this.applicationIdFilter.filter.value,
+    )
   }
 
   /**
@@ -155,7 +164,7 @@ export class DetailsPanelComponent implements OnDestroy {
    * @memberof DetailsPanelComponent
    */
   public clearAllFilters() {
-    this.applicationIdFilter.reset();
+    this.applicationIdFilter.reset()
   }
 
   /**
@@ -165,9 +174,9 @@ export class DetailsPanelComponent implements OnDestroy {
    */
   ngOnDestroy() {
     if (this.addCommentModal) {
-      (this.addCommentModal.componentInstance as CommentModalComponent).dismiss('destroying');
+      ;(this.addCommentModal.componentInstance as CommentModalComponent).dismiss('destroying')
     }
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    this.ngUnsubscribe.next()
+    this.ngUnsubscribe.complete()
   }
 }
