@@ -30,7 +30,7 @@ module.exports = function(config) {
       failFast: false
     },
     // Change reporters based on the existence of the --code-coverage flag
-    reporters: config.buildWebpack.options.codeCoverage ? ['progress', 'coverage-istanbul'] : ['spec', 'kjhtml'],
+    reporters: config.buildWebpack && config.buildWebpack.options && config.buildWebpack.options.codeCoverage ? ['progress', 'coverage-istanbul'] : ['spec', 'kjhtml'],
     port: 9876,
     colors: true,
     logLevel: config.LOG_INFO,
