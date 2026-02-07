@@ -45,7 +45,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_BACKEND }}
         with:
           commands: |
-            npm ci
+            npm ci --legacy-peer-deps
             npm run lint
             npm run test:cov
           dir: backend
@@ -79,7 +79,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
         with:
           commands: |
-            npm ci
+            npm ci --legacy-peer-deps
             npm run lint
             npm run test:cov
           dir: frontend/public
