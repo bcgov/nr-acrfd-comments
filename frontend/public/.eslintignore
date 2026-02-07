@@ -1,0 +1,8 @@
+node_modules
+coverage
+dist
+.git
+e2e
+**/*.spec.ts
+karma.conf.js
+protractor.conf.js

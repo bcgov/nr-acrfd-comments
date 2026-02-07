@@ -1,12 +1,12 @@
-'use strict';
+'use strict'
 
 /**
  * This file contains various utility functions for working with spatial data.
  */
 
-const Wkx = require('wkx');
-const epsg = require('epsg');
-const reproject = require('reproject');
+const Wkx = require('wkx')
+const epsg = require('epsg')
+const reproject = require('reproject')
 
 /**
  * Converts interestParcels wkt geometry data into an array of ESPG:3005 data used by leaflet.
@@ -16,11 +16,11 @@ const reproject = require('reproject');
  */
 exports.getGeometryArray = function(geo) {
   if (!geo || !geo.wktGeometry) {
-    return [];
+    return []
   }
 
-  return this.convertGeoJSONToEPSG3005(this.convertWKTToGeoJson(geo.wktGeometry));
-};
+  return this.convertGeoJSONToEPSG3005(this.convertWKTToGeoJson(geo.wktGeometry))
+}
 
 /**
  * Converts wkt geometry data to an array of GeoJson format polygons.
@@ -37,25 +37,25 @@ exports.getGeometryArray = function(geo) {
  */
 exports.convertWKTToGeoJson = function(wktGeometry) {
   if (!wktGeometry) {
-    return [];
+    return []
   }
 
-  const geoJSONArray = [];
+  const geoJSONArray = []
 
   // convert to wkt to geojson
-  const geoJSON = Wkx.Geometry.parse(wktGeometry).toGeoJSON();
+  const geoJSON = Wkx.Geometry.parse(wktGeometry).toGeoJSON()
 
   if (geoJSON.type === 'GeometryCollection') {
     // parse out GeometryCollection sub-polygons.
-    geoJSON.geometries.forEach(element => {
-      geoJSONArray.push(element);
-    });
+    geoJSON.geometries.forEach((element) => {
+      geoJSONArray.push(element)
+    })
   } else {
-    geoJSONArray.push(geoJSON);
+    geoJSONArray.push(geoJSON)
   }
 
-  return geoJSONArray;
-};
+  return geoJSONArray
+}
 
 /**
  * Converts an array of GeoJson format objects to an array of EPSG:3005 format objects usable by leaflet.
@@ -65,15 +65,15 @@ exports.convertWKTToGeoJson = function(wktGeometry) {
  */
 exports.convertGeoJSONToEPSG3005 = function(geoJSONArray) {
   if (!geoJSONArray) {
-    return [];
+    return []
   }
 
-  const leafletFormatArray = [];
+  const leafletFormatArray = []
 
-  geoJSONArray.forEach(element => {
+  geoJSONArray.forEach((element) => {
     // Convert for use in leaflet coords.
-    leafletFormatArray.push(reproject.toWgs84(element, 'EPSG:3005', epsg));
-  });
+    leafletFormatArray.push(reproject.toWgs84(element, 'EPSG:3005', epsg))
+  })
 
-  return leafletFormatArray;
-};
+  return leafletFormatArray
+}

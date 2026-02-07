@@ -1,9 +1,9 @@
-import { Injectable } from '@angular/core';
-import { Params, ActivatedRoute, Router, NavigationEnd, Event } from '@angular/router';
-import { Observable } from 'rxjs';
-import { filter, share } from 'rxjs/operators';
-import { debounce } from 'lodash';
-import { Location } from '@angular/common';
+import { Injectable } from '@angular/core'
+import { Params, ActivatedRoute, Router, NavigationEnd, Event } from '@angular/router'
+import { Observable } from 'rxjs'
+import { filter, share } from 'rxjs/operators'
+import { debounce } from 'lodash'
+import { Location } from '@angular/common'
 
 /**
  * This service provides a centralized mechanism to save and restore query parameters to the URL.
@@ -14,9 +14,9 @@ import { Location } from '@angular/common';
  */
 @Injectable()
 export class UrlService {
-  public onNavEnd$: Observable<NavigationEnd>; // see details below
-  private queryParams: Params = {};
-  private panel: string = null;
+  public onNavEnd$: Observable<NavigationEnd> // see details below
+  private queryParams: Params = {}
+  private panel: string = null
 
   constructor(public route: ActivatedRoute, public router: Router, public location: Location) {
     // Create a new observable that publishes only the NavigationEnd event used for subscribers to know when to
@@ -24,23 +24,23 @@ export class UrlService {
     // Use share() so this fires only once each time even with multiple subscriptions
     this.onNavEnd$ = this.router.events.pipe(
       filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd),
-      share()
-    );
+      share(),
+    )
 
     // keep url fragment up to date
-    this.onNavEnd$.subscribe(event => {
-      const urlTree = router.parseUrl(event.url);
+    this.onNavEnd$.subscribe((event) => {
+      const urlTree = router.parseUrl(event.url)
 
       if (urlTree) {
-        this.panel = urlTree.fragment;
+        this.panel = urlTree.fragment
       }
-    });
+    })
 
     // keep query params up to date
-    this.route.queryParamMap.subscribe(paramMap => {
-      this.queryParams = {}; // reset query params
-      paramMap.keys.forEach(key => (this.queryParams[key] = paramMap.get(key)));
-    });
+    this.route.queryParamMap.subscribe((paramMap) => {
+      this.queryParams = {} // reset query params
+      paramMap.keys.forEach((key) => (this.queryParams[key] = paramMap.get(key)))
+    })
   }
 
   /**
@@ -51,7 +51,7 @@ export class UrlService {
    * @memberof UrlService
    */
   public getQueryParam(key: string): string {
-    return this.queryParams[key] || null;
+    return this.queryParams[key] || null
   }
 
   /**
@@ -67,19 +67,19 @@ export class UrlService {
   public setQueryParam(key: string, value: string): void {
     if (value === this.getQueryParam(key)) {
       // query param exists and has not changed
-      return;
+      return
     }
 
     if (value) {
       // add/update key
-      this.queryParams[key] = value;
+      this.queryParams[key] = value
     } else {
       // remove key
-      delete this.queryParams[key];
+      delete this.queryParams[key]
     }
 
     // update url
-    this.navigate();
+    this.navigate()
   }
 
   /**
@@ -93,11 +93,11 @@ export class UrlService {
   public setFragment(fragment: string): void {
     if (fragment === this.panel) {
       // fragment exists and has not changed
-      return;
+      return
     }
 
-    this.panel = fragment;
-    this.navigate();
+    this.panel = fragment
+    this.navigate()
   }
 
   /**
@@ -107,7 +107,7 @@ export class UrlService {
    * @memberof UrlService
    */
   public getFragment(): string {
-    return this.panel;
+    return this.panel
   }
 
   /**
@@ -118,6 +118,6 @@ export class UrlService {
   public navigate = debounce(() => {
     this.router
       .navigate([], { relativeTo: this.route, queryParams: this.queryParams, fragment: this.panel })
-      .toString();
-  }, 100);
+      .toString()
+  }, 100)
 }

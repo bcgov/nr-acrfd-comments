@@ -12,9 +12,9 @@ db.applications.aggregate([
   // delete field
   { $project: { _proponent: false } },
   // save as new collection
-  { $out: 'applications2' }
-]);
+  { $out: 'applications2' },
+])
 
 // 4. if OK, run the following:
 
-db.applications2.renameCollection('applications', true);
+db.applications2.renameCollection('applications', true)

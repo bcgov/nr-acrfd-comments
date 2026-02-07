@@ -1,19 +1,19 @@
-import { Component, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import * as moment from 'moment';
+import { Component, OnDestroy, Output, EventEmitter } from '@angular/core'
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap'
+import { Subject } from 'rxjs'
+import { takeUntil } from 'rxjs/operators'
+import * as moment from 'moment'
 
-import { ApplicationService, IFiltersType } from 'app/services/application.service';
-import { CommentPeriodService } from 'app/services/commentperiod.service';
-import { PurposeInfoModalComponent } from 'app/applications/purpose-info-modal/purpose-info-modal.component';
-import { UrlService } from 'app/services/url.service';
+import { ApplicationService, IFiltersType } from 'app/services/application.service'
+import { CommentPeriodService } from 'app/services/commentperiod.service'
+import { PurposeInfoModalComponent } from 'app/applications/purpose-info-modal/purpose-info-modal.component'
+import { UrlService } from 'app/services/url.service'
 
-import { StatusCodes, PurposeCodes } from 'app/utils/constants/application';
-import { CommentCodes } from 'app/utils/constants/comment';
-import { ICodeGroup } from 'app/utils/constants/interfaces';
-import { Filter, MultiFilter, IMultiFilterFields, FilterUtils } from '../utils/filter';
-import { IUpdateEvent } from '../applications.component';
+import { StatusCodes, PurposeCodes } from 'app/utils/constants/application'
+import { CommentCodes } from 'app/utils/constants/comment'
+import { ICodeGroup } from 'app/utils/constants/interfaces'
+import { Filter, MultiFilter, IMultiFilterFields, FilterUtils } from '../utils/filter'
+import { IUpdateEvent } from '../applications.component'
 
 /**
  * Explore side panel.
@@ -25,26 +25,26 @@ import { IUpdateEvent } from '../applications.component';
 @Component({
   selector: 'app-explore-panel',
   templateUrl: './explore-panel.component.html',
-  styleUrls: ['./explore-panel.component.scss']
+  styleUrls: ['./explore-panel.component.scss'],
 })
 export class ExplorePanelComponent implements OnDestroy {
-  @Output() update = new EventEmitter<IUpdateEvent>();
+  @Output() update = new EventEmitter<IUpdateEvent>()
 
-  public filterHash: string;
+  public filterHash: string
 
-  readonly minDate = moment('2018-03-23').toDate(); // first app created
-  readonly maxDate = moment().toDate(); // today
+  readonly minDate = moment('2018-03-23').toDate() // first app created
+  readonly maxDate = moment().toDate() // today
 
-  public ngUnsubscribe: Subject<boolean> = new Subject<boolean>();
+  public ngUnsubscribe: Subject<boolean> = new Subject<boolean>()
 
   // comment period filters
   public commentPeriodFilters = new MultiFilter<boolean>({
     queryParamsKey: 'cpStatus',
     filters: [
       { queryParam: CommentCodes.OPEN.code, displayString: 'Commenting Open', value: false },
-      { queryParam: CommentCodes.NOT_OPEN.code, displayString: 'Commenting Closed', value: false }
-    ]
-  });
+      { queryParam: CommentCodes.NOT_OPEN.code, displayString: 'Commenting Closed', value: false },
+    ],
+  })
 
   // application status filters
   public statusFilters = new MultiFilter<boolean>({
@@ -53,55 +53,61 @@ export class ExplorePanelComponent implements OnDestroy {
       {
         queryParam: StatusCodes.APPLICATION_UNDER_REVIEW.param,
         displayString: StatusCodes.APPLICATION_UNDER_REVIEW.text.short,
-        value: false
+        value: false,
       },
       {
         queryParam: StatusCodes.APPLICATION_REVIEW_COMPLETE.param,
         displayString: StatusCodes.APPLICATION_REVIEW_COMPLETE.text.short,
-        value: false
+        value: false,
       },
       {
         queryParam: StatusCodes.DECISION_APPROVED.param,
         displayString: StatusCodes.DECISION_APPROVED.text.short,
-        value: false
+        value: false,
       },
       {
         queryParam: StatusCodes.DECISION_NOT_APPROVED.param,
         displayString: StatusCodes.DECISION_NOT_APPROVED.text.short,
-        value: false
+        value: false,
       },
-      { queryParam: StatusCodes.ABANDONED.param, displayString: StatusCodes.ABANDONED.text.short, value: false }
-    ]
-  });
+      {
+        queryParam: StatusCodes.ABANDONED.param,
+        displayString: StatusCodes.ABANDONED.text.short,
+        value: false,
+      },
+    ],
+  })
 
   // application purpose filters
   public purposeFilters = new MultiFilter<boolean>({
     queryParamsKey: 'purposes',
     filters: new PurposeCodes().getCodeGroups().map((codeGroup: ICodeGroup) => {
-      return { queryParam: codeGroup.param, displayString: codeGroup.text.long, value: false };
-    })
-  });
+      return { queryParam: codeGroup.param, displayString: codeGroup.text.long, value: false }
+    }),
+  })
 
   // application publish from date filter
-  public publishFromFilter = new Filter<Date>({ filter: { queryParam: 'publishFrom', value: null } });
+  public publishFromFilter = new Filter<Date>({
+    filter: { queryParam: 'publishFrom', value: null },
+  })
 
   // application publish to date filter
-  public publishToFilter = new Filter<Date>({ filter: { queryParam: 'publishTo', value: null } });
+  public publishToFilter = new Filter<Date>({ filter: { queryParam: 'publishTo', value: null } })
 
   constructor(
     public modalService: NgbModal,
     public applicationService: ApplicationService, // used in template
     public commentPeriodService: CommentPeriodService, // used in template
-    public urlService: UrlService
+    public urlService: UrlService,
   ) {
     // watch for URL param changes
     // NB: this must be in constructor to get initial parameters
     this.urlService.onNavEnd$.pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => {
-      this.loadQueryParameters();
+      this.loadQueryParameters()
       if (this.areFiltersSet()) {
-        this.emitUpdate({ search: false, resetMap: false, hidePanel: false });
+        this.emitUpdate({ search: false, resetMap: false, hidePanel: false })
       }
-    });
+    })
   }
 
   /**
@@ -117,15 +123,15 @@ export class ExplorePanelComponent implements OnDestroy {
       this.statusFilters,
       this.purposeFilters,
       this.publishFromFilter,
-      this.publishToFilter
-    );
+      this.publishToFilter,
+    )
 
     if (this.filterHash === newFilterHash) {
-      return false;
+      return false
     }
 
-    this.filterHash = newFilterHash;
-    return true;
+    this.filterHash = newFilterHash
+    return true
   }
 
   /**
@@ -135,7 +141,7 @@ export class ExplorePanelComponent implements OnDestroy {
    * @memberof ExplorePanelComponent
    */
   public toggleFilter(filter: IMultiFilterFields<boolean>) {
-    filter.value = !filter.value;
+    filter.value = !filter.value
   }
 
   /**
@@ -146,7 +152,7 @@ export class ExplorePanelComponent implements OnDestroy {
    */
   public emitUpdate(updateEventOptions: IUpdateEvent) {
     if (this.checkAndSetFiltersHash()) {
-      this.update.emit({ ...updateEventOptions, filters: this.getFilters() });
+      this.update.emit({ ...updateEventOptions, filters: this.getFilters() })
     }
   }
 
@@ -156,30 +162,38 @@ export class ExplorePanelComponent implements OnDestroy {
    * @memberof ExplorePanelComponent
    */
   public loadQueryParameters(): void {
-    const cpStatusQueryParams = (this.urlService.getQueryParam(this.commentPeriodFilters.queryParamsKey) || '').split(
-      '|'
-    );
-    this.commentPeriodFilters.filters.forEach(filter => {
-      filter.value = cpStatusQueryParams.includes(filter.queryParam);
-    });
+    const cpStatusQueryParams = (
+      this.urlService.getQueryParam(this.commentPeriodFilters.queryParamsKey) || ''
+    ).split('|')
+    this.commentPeriodFilters.filters.forEach((filter) => {
+      filter.value = cpStatusQueryParams.includes(filter.queryParam)
+    })
 
-    const appStatusQueryParams = (this.urlService.getQueryParam(this.statusFilters.queryParamsKey) || '').split('|');
-    this.statusFilters.filters.forEach(filter => {
-      filter.value = appStatusQueryParams.includes(filter.queryParam);
-    });
+    const appStatusQueryParams = (
+      this.urlService.getQueryParam(this.statusFilters.queryParamsKey) || ''
+    ).split('|')
+    this.statusFilters.filters.forEach((filter) => {
+      filter.value = appStatusQueryParams.includes(filter.queryParam)
+    })
 
-    const appPurposeQueryParams = (this.urlService.getQueryParam(this.purposeFilters.queryParamsKey) || '').split('|');
-    this.purposeFilters.filters.forEach(filter => {
-      filter.value = appPurposeQueryParams.includes(filter.queryParam);
-    });
+    const appPurposeQueryParams = (
+      this.urlService.getQueryParam(this.purposeFilters.queryParamsKey) || ''
+    ).split('|')
+    this.purposeFilters.filters.forEach((filter) => {
+      filter.value = appPurposeQueryParams.includes(filter.queryParam)
+    })
 
-    this.publishFromFilter.filter.value = this.urlService.getQueryParam(this.publishFromFilter.filter.queryParam)
+    this.publishFromFilter.filter.value = this.urlService.getQueryParam(
+      this.publishFromFilter.filter.queryParam,
+    )
       ? moment(this.urlService.getQueryParam(this.publishFromFilter.filter.queryParam)).toDate()
-      : null;
+      : null
 
-    this.publishToFilter.filter.value = this.urlService.getQueryParam(this.publishToFilter.filter.queryParam)
+    this.publishToFilter.filter.value = this.urlService.getQueryParam(
+      this.publishToFilter.filter.queryParam,
+    )
       ? moment(this.urlService.getQueryParam(this.publishToFilter.filter.queryParam)).toDate()
-      : null;
+      : null
   }
 
   /**
@@ -202,10 +216,10 @@ export class ExplorePanelComponent implements OnDestroy {
         ? moment(this.publishToFilter.filter.value)
             .endOf('day')
             .toDate()
-        : null
-    };
+        : null,
+    }
 
-    return filters;
+    return filters
   }
 
   /**
@@ -214,8 +228,8 @@ export class ExplorePanelComponent implements OnDestroy {
    * @memberof ExplorePanelComponent
    */
   public applyAllFilters() {
-    this.saveQueryParameters();
-    this.emitUpdate({ search: true, resetMap: true, hidePanel: false });
+    this.saveQueryParameters()
+    this.emitUpdate({ search: true, resetMap: true, hidePanel: false })
   }
 
   /**
@@ -224,8 +238,8 @@ export class ExplorePanelComponent implements OnDestroy {
    * @memberof ExplorePanelComponent
    */
   public applyAllFiltersMobile() {
-    this.saveQueryParameters();
-    this.emitUpdate({ search: true, resetMap: true, hidePanel: true });
+    this.saveQueryParameters()
+    this.emitUpdate({ search: true, resetMap: true, hidePanel: true })
   }
 
   /**
@@ -236,22 +250,30 @@ export class ExplorePanelComponent implements OnDestroy {
   public saveQueryParameters() {
     this.urlService.setQueryParam(
       this.commentPeriodFilters.queryParamsKey,
-      this.commentPeriodFilters.getQueryParamsString()
-    );
+      this.commentPeriodFilters.getQueryParamsString(),
+    )
 
-    this.urlService.setQueryParam(this.statusFilters.queryParamsKey, this.statusFilters.getQueryParamsString());
+    this.urlService.setQueryParam(
+      this.statusFilters.queryParamsKey,
+      this.statusFilters.getQueryParamsString(),
+    )
 
-    this.urlService.setQueryParam(this.purposeFilters.queryParamsKey, this.purposeFilters.getQueryParamsString());
+    this.urlService.setQueryParam(
+      this.purposeFilters.queryParamsKey,
+      this.purposeFilters.getQueryParamsString(),
+    )
 
     this.urlService.setQueryParam(
       this.publishFromFilter.filter.queryParam,
-      this.publishFromFilter.filter.value && moment(this.publishFromFilter.filter.value).format('YYYY-MM-DD')
-    );
+      this.publishFromFilter.filter.value &&
+        moment(this.publishFromFilter.filter.value).format('YYYY-MM-DD'),
+    )
 
     this.urlService.setQueryParam(
       this.publishToFilter.filter.queryParam,
-      this.publishToFilter.filter.value && moment(this.publishToFilter.filter.value).format('YYYY-MM-DD')
-    );
+      this.publishToFilter.filter.value &&
+        moment(this.publishToFilter.filter.value).format('YYYY-MM-DD'),
+    )
   }
 
   /**
@@ -261,9 +283,9 @@ export class ExplorePanelComponent implements OnDestroy {
    * @memberof ExplorePanelComponent
    */
   public clear() {
-    this.clearAllFilters();
-    this.saveQueryParameters();
-    this.emitUpdate({ search: true, resetMap: true, hidePanel: false });
+    this.clearAllFilters()
+    this.saveQueryParameters()
+    this.emitUpdate({ search: true, resetMap: true, hidePanel: false })
   }
 
   /**
@@ -272,11 +294,11 @@ export class ExplorePanelComponent implements OnDestroy {
    * @memberof ExplorePanelComponent
    */
   public clearAllFilters() {
-    this.commentPeriodFilters.reset();
-    this.statusFilters.reset();
-    this.purposeFilters.reset();
-    this.publishFromFilter.reset();
-    this.publishToFilter.reset();
+    this.commentPeriodFilters.reset()
+    this.statusFilters.reset()
+    this.purposeFilters.reset()
+    this.publishFromFilter.reset()
+    this.publishToFilter.reset()
   }
 
   /**
@@ -292,7 +314,7 @@ export class ExplorePanelComponent implements OnDestroy {
       this.purposeFilters.isFilterSet() ||
       this.publishFromFilter.isFilterSet() ||
       this.publishToFilter.isFilterSet()
-    );
+    )
   }
 
   /**
@@ -301,7 +323,7 @@ export class ExplorePanelComponent implements OnDestroy {
    * @memberof ExplorePanelComponent
    */
   public showPurposeInfoModal() {
-    this.modalService.open(PurposeInfoModalComponent, { size: 'lg', windowClass: 'modal-fixed' });
+    this.modalService.open(PurposeInfoModalComponent, { size: 'lg', windowClass: 'modal-fixed' })
   }
 
   /**
@@ -310,7 +332,7 @@ export class ExplorePanelComponent implements OnDestroy {
    * @memberof ExplorePanelComponent
    */
   public ngOnDestroy() {
-    this.ngUnsubscribe.next();
-    this.ngUnsubscribe.complete();
+    this.ngUnsubscribe.next()
+    this.ngUnsubscribe.complete()
   }
 }

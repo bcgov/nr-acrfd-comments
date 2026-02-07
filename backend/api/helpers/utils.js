@@ -1,84 +1,88 @@
-'use strict';
+'use strict'
 
 /**
  * This file contains various utility functions for working with ACRFD and ACRFD data.
  */
 
-var _ = require('lodash');
-var mongoose = require('mongoose');
-var clamav = require('clamav.js');
-const defaultLog = require('./logger')('utils');
+var _ = require('lodash')
+var mongoose = require('mongoose')
+var clamav = require('clamav.js')
+const defaultLog = require('./logger')('utils')
 
-var _serviceHost = process.env.CLAMAV_SERVICE_HOST || '127.0.0.1';
-var _servicePort = process.env.CLAMAV_SERVICE_PORT || '3310';
-var MAX_LIMIT = 100000;
-var DEFAULT_PAGESIZE = 100;
+var _serviceHost = process.env.CLAMAV_SERVICE_HOST || '127.0.0.1'
+var _servicePort = process.env.CLAMAV_SERVICE_PORT || '3310'
+var MAX_LIMIT = 100000
+var DEFAULT_PAGESIZE = 100
 
 exports.buildQuery = function(property, values, query) {
-  var oids = [];
+  var oids = []
   if (_.isArray(values)) {
     _.each(values, function(i) {
-      oids.push(mongoose.Types.ObjectId(i));
-    });
+      oids.push(mongoose.Types.ObjectId(i))
+    })
   } else {
-    oids.push(mongoose.Types.ObjectId(values));
+    oids.push(mongoose.Types.ObjectId(values))
   }
   return _.assignIn(query, {
     [property]: {
-      $in: oids
-    }
-  });
-};
+      $in: oids,
+    },
+  })
+}
 
 // MBL: TODO Make this event driven instead of synchronous?
 exports.avScan = function(buffer) {
   return new Promise(function(resolve, reject) {
-    var stream = require('stream');
+    var stream = require('stream')
     // Initiate the source
-    var bufferStream = new stream.PassThrough();
+    var bufferStream = new stream.PassThrough()
     // Write your buffer
-    bufferStream.end(buffer);
+    bufferStream.end(buffer)
 
     clamav.ping(_servicePort, _serviceHost, 1000, function(err) {
       if (err) {
-        defaultLog.error('ClamAV service: ' + _serviceHost + ':' + _servicePort + ' is not available[' + err + ']');
-        resolve(false);
+        defaultLog.error(
+          'ClamAV service: ' + _serviceHost + ':' + _servicePort + ' is not available[' + err + ']',
+        )
+        resolve(false)
       } else {
-        defaultLog.info('ClamAV service is alive: ' + _serviceHost + ':' + _servicePort);
-        clamav.createScanner(_servicePort, _serviceHost).scan(bufferStream, function(err, object, malicious) {
-          if (err) {
-            defaultLog.error(err);
-            resolve(false);
-          } else if (malicious) {
-            defaultLog.warn('Malicious object FOUND');
-            resolve(false);
-          } else {
-            defaultLog.info('Virus scan OK');
-            resolve(true);
-          }
-        });
+        defaultLog.info('ClamAV service is alive: ' + _serviceHost + ':' + _servicePort)
+        clamav
+          .createScanner(_servicePort, _serviceHost)
+          .scan(bufferStream, function(err, object, malicious) {
+            if (err) {
+              defaultLog.error(err)
+              resolve(false)
+            } else if (malicious) {
+              defaultLog.warn('Malicious object FOUND')
+              resolve(false)
+            } else {
+              defaultLog.info('Virus scan OK')
+              resolve(true)
+            }
+          })
       }
-    });
-  });
-};
+    })
+  })
+}
 
 exports.getSkipLimitParameters = function(pageSize, pageNum) {
-  const params = {};
+  const params = {}
 
-  var ps = DEFAULT_PAGESIZE; // Default
+  var ps = DEFAULT_PAGESIZE // Default
   if (pageSize && pageSize.value !== undefined) {
     if (pageSize.value > 0) {
-      ps = pageSize.value;
+      ps = pageSize.value
     }
   }
   if (pageNum && pageNum.value !== undefined) {
     if (pageNum.value >= 0) {
-      params.skip = pageNum.value * ps;
-      params.limit = ps;
+      params.skip = pageNum.value * ps
+      params.limit = ps
     }
   }
-  return params;
-};
+  return params
+}
 
 exports.runDataQuery = function(
   modelType,
@@ -90,35 +94,35 @@ exports.runDataQuery = function(
   skip,
   limit,
   count,
-  preQueryPipelineSteps
+  preQueryPipelineSteps,
 ) {
   return new Promise(function(resolve, reject) {
-    var theModel = mongoose.model(modelType);
-    var projection = {};
+    var theModel = mongoose.model(modelType)
+    var projection = {}
 
     // Don't project unecessary fields if we are only counting objects.
     if (count) {
-      projection._id = 1;
-      projection.tags = 1;
+      projection._id = 1
+      projection.tags = 1
     } else {
       // Fields we always return
-      var defaultFields = ['_id', 'code', 'tags'];
+      var defaultFields = ['_id', 'code', 'tags']
       _.each(defaultFields, function(f) {
-        projection[f] = 1;
-      });
+        projection[f] = 1
+      })
 
       // Add requested fields - sanitize first by including only those that we can/want to return
       _.each(fields, function(f) {
-        projection[f] = 1;
-      });
+        projection[f] = 1
+      })
     }
 
     var aggregations = _.compact([
       {
-        $match: query
+        $match: query,
       },
       {
-        $project: projection
+        $project: projection,
       },
       {
         $redact: {
@@ -128,14 +132,14 @@ exports.runDataQuery = function(
                 $map: {
                   input: '$tags',
                   as: 'fieldTag',
-                  in: { $setIsSubset: ['$$fieldTag', role] }
-                }
-              }
+                  in: { $setIsSubset: ['$$fieldTag', role] },
+                },
+              },
             },
             then: '$$DESCEND',
-            else: '$$PRUNE'
-          }
-        }
+            else: '$$PRUNE',
+          },
+        },
       },
 
       sortWarmUp, // Used to setup the sort if a temporary projection is needed.
@@ -148,23 +152,23 @@ exports.runDataQuery = function(
       count && {
         $group: {
           _id: null,
-          total_items: { $sum: 1 }
-        }
+          total_items: { $sum: 1 },
+        },
       },
       { $skip: skip || 0 },
-      { $limit: limit || MAX_LIMIT }
-    ]);
+      { $limit: limit || MAX_LIMIT },
+    ])
 
     // Pre-pend the aggregation with other pipeline steps if we are joining on another datasource
     if (preQueryPipelineSteps && preQueryPipelineSteps.length > 0) {
       for (let step of preQueryPipelineSteps) {
-        aggregations.unshift(step);
+        aggregations.unshift(step)
       }
     }
 
     theModel
       .aggregate(aggregations)
       .exec()
-      .then(resolve, reject);
-  });
-};
+      .then(resolve, reject)
+  })
+}

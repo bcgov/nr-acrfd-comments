@@ -30,17 +30,17 @@ var tagList = [
   'type',
 ]
 
-var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
+var getSanitizedFields = function(fields) {
+  return _.remove(fields, function(f) {
     return _.indexOf(tagList, f) !== -1
   })
 }
 
-exports.protectedOptions = function (args, res, next) {
+exports.protectedOptions = function(args, res, next) {
   res.status(200).send()
 }
 
-exports.publicHead = function (args, res, next) {
+exports.publicHead = function(args, res, next) {
   // Build match query if on appId route
   var query = {}
 
@@ -64,7 +64,7 @@ exports.publicHead = function (args, res, next) {
   handleCommentPeriodDateQueryParameters(
     args,
     tagList,
-    function (commentPeriodPipeline) {
+    function(commentPeriodPipeline) {
       Utils.runDataQuery(
         'Application',
         ['public'],
@@ -77,7 +77,7 @@ exports.publicHead = function (args, res, next) {
         true,
         commentPeriodPipeline,
       ) // count
-        .then(function (data) {
+        .then(function(data) {
           // /api/comment/ route, return 200 OK with 0 items if necessary
           if (
             !(args.swagger.params.appId && args.swagger.params.appId.value) ||
@@ -89,18 +89,18 @@ exports.publicHead = function (args, res, next) {
             return Actions.sendResponse(res, 404, data)
           }
         })
-        .catch(function (err) {
+        .catch(function(err) {
           defaultLog.error('application publicHead runDataQuery:', err)
           return Actions.sendResponse(res, 400, err)
         })
     },
-    function (error) {
+    function(error) {
       return Actions.sendResponse(res, 400, error)
     },
   )
 }
 
-exports.publicGet = function (args, res, next) {
+exports.publicGet = function(args, res, next) {
   // Build match query if on appId route
   var query = {}
   var skip = null
@@ -134,7 +134,7 @@ exports.publicGet = function (args, res, next) {
   handleCommentPeriodDateQueryParameters(
     args,
     tagList,
-    function (commentPeriodPipeline) {
+    function(commentPeriodPipeline) {
       Utils.runDataQuery(
         'Application',
         ['public'],
@@ -147,7 +147,7 @@ exports.publicGet = function (args, res, next) {
         false,
         commentPeriodPipeline,
       ) // count
-        .then(function (data) {
+        .then(function(data) {
           // Set the x-total-count header for pagination
           if (data && data.length > 0 && data[0].total_items !== undefined) {
             res.setHeader('x-total-count', data[0].total_items)
@@ -157,18 +157,18 @@ exports.publicGet = function (args, res, next) {
           }
           return Actions.sendResponse(res, 200, data)
         })
-        .catch(function (err) {
+        .catch(function(err) {
           defaultLog.error('application publicGet runDataQuery:', err)
           return Actions.sendResponse(res, 400, err)
         })
     },
-    function (error) {
+    function(error) {
       return Actions.sendResponse(res, 400, error)
     },
   )
 }
 
-exports.protectedGet = function (args, res, next) {
+exports.protectedGet = function(args, res, next) {
   var query = {}
   var sort = {}
   var skip = null
@@ -223,16 +223,16 @@ exports.protectedGet = function (args, res, next) {
     limit, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
     })
-    .catch(function (err) {
+    .catch(function(err) {
       defaultLog.error('application protectedGet runDataQuery:', err)
       return Actions.sendResponse(res, 400, err)
     })
 }
 
-exports.protectedHead = function (args, res, next) {
+exports.protectedHead = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -273,7 +273,7 @@ exports.protectedHead = function (args, res, next) {
     1000000, // limit
     true,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       // /api/comment/ route, return 200 OK with 0 items if necessary
       if (
         !(args.swagger.params.appId && args.swagger.params.appId.value) ||
@@ -285,28 +285,28 @@ exports.protectedHead = function (args, res, next) {
         return Actions.sendResponse(res, 404, data)
       }
     })
-    .catch(function (err) {
+    .catch(function(err) {
       defaultLog.error('application protectedHead runDataQuery:', err)
       return Actions.sendResponse(res, 400, err)
     })
 }
 
-exports.protectedDelete = function (args, res, next) {
+exports.protectedDelete = function(args, res, next) {
   var appId = args.swagger.params.appId.value
   defaultLog.info('Delete Application:', appId)
 
   var Application = mongoose.model('Application')
-  Application.findOne({ _id: appId }, function (err, o) {
+  Application.findOne({ _id: appId }, function(err, o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
       // Set the deleted flag.
       Actions.delete(o).then(
-        function (deleted) {
+        function(deleted) {
           // Deleted successfully
           return Actions.sendResponse(res, 200, deleted)
         },
-        function (err) {
+        function(err) {
           // Error
           return Actions.sendResponse(res, 400, err)
         },
@@ -318,23 +318,23 @@ exports.protectedDelete = function (args, res, next) {
   })
 }
 
-var doFeaturePubUnPub = function (action, objId) {
-  return new Promise(function (resolve, reject) {
+var doFeaturePubUnPub = function(action, objId) {
+  return new Promise(function(resolve, reject) {
     var Feature = require('mongoose').model('Feature')
 
-    Feature.find({ applicationID: objId }, function (err, featureObjects) {
+    Feature.find({ applicationID: objId }, function(err, featureObjects) {
       if (err) {
         reject(err)
       } else {
         var promises = []
-        _.each(featureObjects, function (f) {
+        _.each(featureObjects, function(f) {
           promises.push(f)
         })
         // Iterate through all the promises before returning.
         Promise.resolve()
-          .then(function () {
-            return promises.reduce(function (previousItem, currentItem) {
-              return previousItem.then(function () {
+          .then(function() {
+            return promises.reduce(function(previousItem, currentItem) {
+              return previousItem.then(function() {
                 if (action == 'publish') {
                   if (!Actions.isPublished(currentItem)) {
                     return Actions.publish(currentItem)
@@ -352,7 +352,7 @@ var doFeaturePubUnPub = function (action, objId) {
               })
             }, Promise.resolve())
           })
-          .then(function () {
+          .then(function() {
             // All done with promises in the array, return to the caller.
             defaultLog.info('done Pub/UnPub all features.')
             resolve()
@@ -362,8 +362,8 @@ var doFeaturePubUnPub = function (action, objId) {
   })
 }
 
-var doFeatureSave = function (item, appId) {
-  return new Promise(function (resolve, reject) {
+var doFeatureSave = function(item, appId) {
+  return new Promise(function(resolve, reject) {
     // MBL TODO: What to do if feature was already in?
     var Feature = mongoose.model('Feature')
     var feat = new Feature(item)
@@ -375,7 +375,7 @@ var doFeatureSave = function (item, appId) {
 }
 
 //  Create a new application
-exports.protectedPost = function (args, res, next) {
+exports.protectedPost = function(args, res, next) {
   var obj = args.swagger.params.app.value
 
   // Get rid of the fields we don't need/setting later below.
@@ -401,17 +401,17 @@ exports.protectedPost = function (args, res, next) {
   app.tags = [['sysadmin']]
   app._createdBy = args.swagger.params.auth_payload.preferred_username
   app.createdDate = Date.now()
-  app.save().then(function (savedApp) {
-    return new Promise(function (resolve, reject) {
+  app.save().then(function(savedApp) {
+    return new Promise(function(resolve, reject) {
       return TTLSUtils.loginWebADE()
-        .then(function (accessToken) {
+        .then(function(accessToken) {
           defaultLog.debug('TTLS API Logged in:', accessToken)
           // Disp lookup
           return TTLSUtils.getApplicationByDispositionID(accessToken, savedApp.tantalisID)
         })
         .then(resolve, reject)
     })
-      .then(function (data) {
+      .then(function(data) {
         // Copy in the meta
         savedApp.areaHectares = data.areaHectares
         savedApp.centroid = data.centroid
@@ -439,25 +439,25 @@ exports.protectedPost = function (args, res, next) {
         }
 
         Promise.resolve()
-          .then(function () {
-            return data.parcels.reduce(function (previousItem, currentItem) {
-              return previousItem.then(function () {
+          .then(function() {
+            return data.parcels.reduce(function(previousItem, currentItem) {
+              return previousItem.then(function() {
                 // publish
                 currentItem.tags = [['sysadmin'], ['public']]
                 return doFeatureSave(currentItem, savedApp._id)
               })
             }, Promise.resolve())
           })
-          .then(function () {
+          .then(function() {
             // All done with promises in the array, return to the caller.
             defaultLog.debug('all done')
             return savedApp.save()
           })
-          .then(function (theApp) {
+          .then(function(theApp) {
             return Actions.sendResponse(res, 200, theApp)
           })
       })
-      .catch(function (err) {
+      .catch(function(err) {
         defaultLog.error('application protectedPost:', err)
         return Actions.sendResponse(res, 400, err)
       })
@@ -465,7 +465,7 @@ exports.protectedPost = function (args, res, next) {
 }
 
 // Update an existing application
-exports.protectedPut = function (args, res, next) {
+exports.protectedPut = function(args, res, next) {
   var objId = args.swagger.params.appId.value
   defaultLog.info('ObjectID:', args.swagger.params.appId.value)
 
@@ -476,44 +476,39 @@ exports.protectedPut = function (args, res, next) {
   // TODO sanitize/update audits.
 
   var Application = require('mongoose').model('Application')
-  Application.findOneAndUpdate(
-    { _id: objId },
-    obj,
-    { upsert: false, new: true },
-    function (err, o) {
-      if (o) {
-        defaultLog.debug('o:', JSON.stringify(o))
-        return Actions.sendResponse(res, 200, o)
-      } else {
-        defaultLog.warn("Couldn't find that object!")
-        return Actions.sendResponse(res, 404, {})
-      }
-    },
-  )
+  Application.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }, function(err, o) {
+    if (o) {
+      defaultLog.debug('o:', JSON.stringify(o))
+      return Actions.sendResponse(res, 200, o)
+    } else {
+      defaultLog.warn("Couldn't find that object!")
+      return Actions.sendResponse(res, 404, {})
+    }
+  })
 }
 
 // Publish/Unpublish the application
-exports.protectedPublish = function (args, res, next) {
+exports.protectedPublish = function(args, res, next) {
   var objId = args.swagger.params.appId.value
   defaultLog.info('Publish Application:', objId)
 
   var Application = require('mongoose').model('Application')
-  Application.findOne({ _id: objId }, function (err, o) {
+  Application.findOne({ _id: objId }, function(err, o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
       // Go through the feature collection and publish the corresponding features.
       doFeaturePubUnPub('publish', objId)
-        .then(function () {
+        .then(function() {
           // Publish the application
           return Actions.publish(o)
         })
         .then(
-          function (published) {
+          function(published) {
             // Published successfully
             return Actions.sendResponse(res, 200, published)
           },
-          function (err) {
+          function(err) {
             // Error
             return Actions.sendResponse(res, null, err)
           },
@@ -525,26 +520,26 @@ exports.protectedPublish = function (args, res, next) {
   })
 }
 
-exports.protectedUnPublish = function (args, res, next) {
+exports.protectedUnPublish = function(args, res, next) {
   var objId = args.swagger.params.appId.value
   defaultLog.info('UnPublish Application:', objId)
 
   var Application = require('mongoose').model('Application')
-  Application.findOne({ _id: objId }, function (err, o) {
+  Application.findOne({ _id: objId }, function(err, o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
       // Go through the feature collection and publish the corresponding features.
       doFeaturePubUnPub('unpublish', objId)
-        .then(function () {
+        .then(function() {
           return Actions.unPublish(o)
         })
         .then(
-          function (unpublished) {
+          function(unpublished) {
             // UnPublished successfully
             return Actions.sendResponse(res, 200, unpublished)
           },
-          function (err) {
+          function(err) {
             // Error
             return Actions.sendResponse(res, null, err)
           },
@@ -557,12 +552,12 @@ exports.protectedUnPublish = function (args, res, next) {
 }
 
 // Refreshes an applications meta and features with the latest data from Tantalis.
-exports.protectedRefresh = function (args, res, next) {
+exports.protectedRefresh = function(args, res, next) {
   var objId = args.swagger.params.appId.value
   defaultLog.info('Refresh Application, _id:', objId)
 
   var Application = require('mongoose').model('Application')
-  Application.findOne({ _id: objId }, function (err, applicationObject) {
+  Application.findOne({ _id: objId }, function(err, applicationObject) {
     if (applicationObject) {
       defaultLog.debug('application before refresh:', JSON.stringify(applicationObject))
 
@@ -583,7 +578,7 @@ exports.protectedRefresh = function (args, res, next) {
 }
 
 /* eslint-disable no-redeclare */
-var handleCommentPeriodDateQueryParameters = function (args, requestedFields, callback, error) {
+var handleCommentPeriodDateQueryParameters = function(args, requestedFields, callback, error) {
   var pipelineSteps = null
   var commentPeriodDates = []
 
@@ -662,7 +657,7 @@ var handleCommentPeriodDateQueryParameters = function (args, requestedFields, ca
   return callback(pipelineSteps)
 }
 
-var addStandardQueryFilters = function (query, args) {
+var addStandardQueryFilters = function(query, args) {
   if (args.swagger.params.publishDate && args.swagger.params.publishDate.value !== undefined) {
     var queryString = qs.parse(args.swagger.params.publishDate.value)
     if (queryString.since && queryString.until) {
@@ -815,7 +810,7 @@ var addStandardQueryFilters = function (query, args) {
     let coordinates = JSON.parse(args.swagger.params.centroid.value)[0]
     // restrict lat and lng to valid bounds
     // safety check: fallback for invalid lat or lng is 0
-    coordinates = coordinates.map(function (coord) {
+    coordinates = coordinates.map(function(coord) {
       const lng = Math.max(Math.min(coord[0] || 0, 179.9999), -180) // -180 to +179.9999
       const lat = Math.max(Math.min(coord[1] || 0, 89.9999), -90) // -90 to +89.9999
       return [lng, lat]

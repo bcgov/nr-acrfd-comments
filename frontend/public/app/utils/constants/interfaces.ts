@@ -10,7 +10,7 @@ export interface ICodeSet {
    *
    * @memberof ICodeSet
    */
-  getCodeGroups: () => ICodeGroup[];
+  getCodeGroups: () => ICodeGroup[]
 }
 
 /**
@@ -28,7 +28,7 @@ export interface ICodeGroup {
    * @type {string}
    * @memberof ICodeGroup
    */
-  code: string;
+  code: string
 
   /**
    * A shorthand value, with no spaces or special characters, useful when building url query parameters.
@@ -38,7 +38,7 @@ export interface ICodeGroup {
    * @type {string}
    * @memberof ICodeGroup
    */
-  param: string;
+  param: string
 
   /**
    * Human friendly strings, in both long and short forms.
@@ -46,7 +46,7 @@ export interface ICodeGroup {
    * @type {{ short: string; long: string }}
    * @memberof ICodeGroup
    */
-  text: { short: string; long: string };
+  text: { short: string; long: string }
 
   /**
    * Child code values. Child codes that are grouped under this code.
@@ -59,5 +59,5 @@ export interface ICodeGroup {
    * @type {string[]}
    * @memberof ICodeGroup
    */
-  mappedCodes: string[];
+  mappedCodes: string[]
 }

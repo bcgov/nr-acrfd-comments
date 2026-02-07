@@ -1,39 +1,39 @@
-import { Component, OnDestroy, Input, ElementRef, OnChanges, SimpleChanges } from '@angular/core';
-import * as L from 'leaflet';
+import { Component, OnDestroy, Input, ElementRef, OnChanges, SimpleChanges } from '@angular/core'
+import * as L from 'leaflet'
 
-import { Application } from 'app/models/application';
+import { Application } from 'app/models/application'
 
 @Component({
   selector: 'app-details-map',
   templateUrl: './details-map.component.html',
-  styleUrls: ['./details-map.component.scss']
+  styleUrls: ['./details-map.component.scss'],
 })
 export class DetailsMapComponent implements OnChanges, OnDestroy {
-  @Input() application: Application = null;
+  @Input() application: Application = null
 
-  public map: L.Map;
-  public appFG: L.FeatureGroup; // group of layers for subject app
+  public map: L.Map
+  public appFG: L.FeatureGroup // group of layers for subject app
 
   // custom reset view control
   public resetViewControl = L.Control.extend({
     options: {
-      position: 'bottomright'
+      position: 'bottomright',
     },
     onAdd: () => {
-      const element = L.DomUtil.create('button');
+      const element = L.DomUtil.create('button')
 
-      element.title = 'Reset view';
-      element.innerText = 'refresh'; // material icon name
-      element.onclick = () => this.fitBounds();
-      element.className = 'material-icons map-reset-control';
+      element.title = 'Reset view'
+      element.innerText = 'refresh' // material icon name
+      element.onclick = () => this.fitBounds()
+      element.className = 'material-icons map-reset-control'
 
       // prevent underlying map actions for these events
-      L.DomEvent.disableClickPropagation(element); // includes double-click
-      L.DomEvent.disableScrollPropagation(element);
+      L.DomEvent.disableClickPropagation(element) // includes double-click
+      L.DomEvent.disableScrollPropagation(element)
 
-      return element;
-    }
-  });
+      return element
+    },
+  })
 
   // map imagery definition
   public World_Imagery = L.tileLayer(
@@ -43,30 +43,30 @@ export class DetailsMapComponent implements OnChanges, OnDestroy {
         // tslint:disable-next-line:max-line-length
         'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
       maxZoom: 16.4,
-      noWrap: true
-    }
-  );
+      noWrap: true,
+    },
+  )
 
   constructor(private elementRef: ElementRef) {}
 
   public ngOnChanges(changes: SimpleChanges) {
     if (changes.application) {
-      this.resetMap();
-      this.createMap();
+      this.resetMap()
+      this.createMap()
     }
   }
 
   public createMap() {
-    this.createBasicMap();
-    this.addScale();
-    this.addZoomControl();
-    this.addResetViewControl();
-    this.addFeatures();
-    this.fixMap();
+    this.createBasicMap()
+    this.addScale()
+    this.addZoomControl()
+    this.addResetViewControl()
+    this.addFeatures()
+    this.fixMap()
   }
 
   public createBasicMap() {
-    this.appFG = L.featureGroup();
+    this.appFG = L.featureGroup()
 
     this.map = L.map('map', {
       layers: [this.World_Imagery],
@@ -76,42 +76,45 @@ export class DetailsMapComponent implements OnChanges, OnDestroy {
       doubleClickZoom: false, // not desired in thumbnail
       zoomSnap: 0.1, // for greater granularity when fitting bounds
       zoomDelta: 3, // for faster zooming in thumbnail
-      maxBounds: L.latLngBounds(L.latLng(-90, -180), L.latLng(90, 180)) // restrict view to "the world"
-    });
+      maxBounds: L.latLngBounds(L.latLng(-90, -180), L.latLng(90, 180)), // restrict view to "the world"
+    })
   }
 
   public addScale() {
     if (this.map) {
-      L.control.scale({ position: 'bottomleft' }).addTo(this.map);
+      L.control.scale({ position: 'bottomleft' }).addTo(this.map)
     }
   }
 
   public addZoomControl() {
     if (this.map) {
-      L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+      L.control.zoom({ position: 'bottomright' }).addTo(this.map)
     }
   }
 
   public addResetViewControl() {
     if (this.map) {
-      this.map.addControl(new this.resetViewControl());
+      this.map.addControl(new this.resetViewControl())
     }
   }
 
   public addFeatures() {
     if (this.map && this.application) {
-      this.application.features.forEach(f => {
-        const feature = JSON.parse(JSON.stringify(f));
-        const featureObj: GeoJSON.Feature<any> = feature;
-        const layer = L.geoJSON(featureObj);
-        this.appFG.addLayer(layer);
+      this.application.features.forEach((f) => {
+        const feature = JSON.parse(JSON.stringify(f))
+        const featureObj: GeoJSON.Feature<any> = feature
+        const layer = L.geoJSON(featureObj)
+        this.appFG.addLayer(layer)
 
         this.map.on('zoomend', () => {
-          const weight = this.getWeight(feature.properties.TENURE_AREA_IN_HECTARES, this.map.getZoom());
-          layer.setStyle({ weight });
-        });
-      });
-      this.map.addLayer(this.appFG);
+          const weight = this.getWeight(
+            feature.properties.TENURE_AREA_IN_HECTARES,
+            this.map.getZoom(),
+          )
+          layer.setStyle({ weight })
+        })
+      })
+      this.map.addLayer(this.appFG)
     }
   }
 
@@ -121,17 +124,17 @@ export class DetailsMapComponent implements OnChanges, OnDestroy {
   // ref: https://stackoverflow.com/questions/19669786/check-if-element-is-visible-in-dom
   private fixMap() {
     if (this.elementRef.nativeElement.offsetParent) {
-      this.fitBounds();
+      this.fitBounds()
     } else {
-      setTimeout(this.fixMap.bind(this), 50);
+      setTimeout(this.fixMap.bind(this), 50)
     }
   }
 
   private fitBounds() {
     if (this.map) {
-      const bounds = this.appFG.getBounds();
+      const bounds = this.appFG.getBounds()
       if (bounds && bounds.isValid()) {
-        this.map.fitBounds(bounds, { padding: [20, 20] });
+        this.map.fitBounds(bounds, { padding: [20, 20] })
       }
     }
   }
@@ -148,69 +151,69 @@ export class DetailsMapComponent implements OnChanges, OnDestroy {
    */
   private getWeight(size: number, zoom: number): number {
     if (!size || !zoom) {
-      return 3; // default
+      return 3 // default
     }
 
     if (size < 2) {
       if (zoom < 3) {
-        return 6;
+        return 6
       }
       if (zoom < 10) {
-        return 7;
+        return 7
       }
       if (zoom < 14) {
-        return 6;
+        return 6
       }
     }
 
     if (size < 15) {
       if (zoom < 12) {
-        return 6;
+        return 6
       }
     }
 
     if (size < 30) {
       if (zoom < 9) {
-        return 6;
+        return 6
       }
     }
 
     if (size < 60) {
       if (zoom < 12) {
-        return 5;
+        return 5
       }
     }
 
     if (size < 150) {
       if (zoom < 9) {
-        return 6;
+        return 6
       }
     }
 
     if (size < 1000) {
       if (zoom < 6) {
-        return 6;
+        return 6
       }
     }
 
     if (zoom < 5) {
-      return 5;
+      return 5
     }
 
-    return 3; // default
+    return 3 // default
   }
 
   public resetMap() {
     if (this.map) {
-      this.map.remove();
+      this.map.remove()
     }
 
     if (this.appFG) {
-      this.appFG.remove();
+      this.appFG.remove()
     }
   }
 
   ngOnDestroy() {
-    this.resetMap();
+    this.resetMap()
   }
 }

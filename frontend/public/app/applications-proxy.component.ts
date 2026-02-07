@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Component } from '@angular/core'
+import { Router, ActivatedRoute } from '@angular/router'
 
 //
 // component to navigate to new application route
@@ -9,13 +9,13 @@ import { Router, ActivatedRoute } from '@angular/router';
 @Component({
   // tslint:disable-next-line:component-selector
   selector: 'applications-proxy-component',
-  template: ''
+  template: '',
 })
 export class ApplicationsProxyComponent {
   constructor(private router: Router, private route: ActivatedRoute) {
     this.router.navigate(['/applications'], {
       queryParams: { id: this.route.snapshot.params['id'] },
-      fragment: 'details'
-    });
+      fragment: 'details',
+    })
   }
 }

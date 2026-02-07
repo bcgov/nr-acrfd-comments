@@ -21,37 +21,37 @@
 /* These IE specific polyfills may be removable in future as part of angular cli 7.3: https://github.com/angular/angular-cli/pull/13403 */
 
 /* IE9, IE10 and IE11 requires all of the following polyfills. */
-import 'core-js/es6/symbol';
-import 'core-js/es6/object';
-import 'core-js/es6/function';
-import 'core-js/es6/parse-int';
-import 'core-js/es6/parse-float';
-import 'core-js/es6/number';
-import 'core-js/es6/math';
-import 'core-js/es6/string';
-import 'core-js/es6/date';
-import 'core-js/es6/array';
-import 'core-js/es6/regexp';
-import 'core-js/es6/map';
-import 'core-js/es6/set';
-import 'core-js/es6/reflect';
-import 'core-js/client/shim';
+import 'core-js/es6/symbol'
+import 'core-js/es6/object'
+import 'core-js/es6/function'
+import 'core-js/es6/parse-int'
+import 'core-js/es6/parse-float'
+import 'core-js/es6/number'
+import 'core-js/es6/math'
+import 'core-js/es6/string'
+import 'core-js/es6/date'
+import 'core-js/es6/array'
+import 'core-js/es6/regexp'
+import 'core-js/es6/map'
+import 'core-js/es6/set'
+import 'core-js/es6/reflect'
+import 'core-js/client/shim'
 
 /** IE10 and IE11 requires the following for NgClass support on SVG elements */
-import 'classlist.js'; // Run `npm install --save classlist.js`.
+import 'classlist.js' // Run `npm install --save classlist.js`.
 
 /* ALL Firefox browsers require the following to support `@angular/animation`. */
 /** IE10 and IE11 requires the following to support `@angular/animation`. */
-import 'web-animations-js'; // Run `npm install --save web-animations-js`.
+import 'web-animations-js' // Run `npm install --save web-animations-js`.
 
 /* Evergreen browsers require these. */
-import 'core-js/es7/reflect';
-import 'core-js/es7/array';
+import 'core-js/es7/reflect'
+import 'core-js/es7/array'
 
 /***************************************************************************************************
  * Zone JS is required by Angular itself.
  */
-import 'zone.js/dist/zone'; // Included with Angular CLI.
+import 'zone.js/dist/zone' // Included with Angular CLI.
 
 /***************************************************************************************************
  * APPLICATION IMPORTS
@@ -61,9 +61,9 @@ import 'zone.js/dist/zone'; // Included with Angular CLI.
  * Date, currency, decimal and percent pipes.
  * Needed for: All but Chrome, Firefox, Edge, IE11 and Safari 10
  */
-import 'intl'; // Run `npm install --save intl`.
-import 'intl/locale-data/complete.js';
-import 'intl/locale-data/jsonp/en.js';
+import 'intl' // Run `npm install --save intl`.
+import 'intl/locale-data/complete.js'
+import 'intl/locale-data/jsonp/en.js'
 
 // Specific polyfill needed for IE11 using current packages as of Sep 24, 2018:
 // https://github.com/uxitten/polyfill/blob/master/string.polyfill.js
@@ -71,16 +71,16 @@ import 'intl/locale-data/jsonp/en.js';
 if (!String.prototype.padStart) {
   String.prototype.padStart = function padStart(targetLength, padString) {
     // tslint:disable-next-line:no-bitwise
-    targetLength = targetLength >> 0; // truncate if number or convert non-number to 0;
-    padString = String(typeof padString !== 'undefined' ? padString : ' ');
+    targetLength = targetLength >> 0 // truncate if number or convert non-number to 0;
+    padString = String(typeof padString !== 'undefined' ? padString : ' ')
     if (this.length > targetLength) {
-      return String(this);
+      return String(this)
     } else {
-      targetLength = targetLength - this.length;
+      targetLength = targetLength - this.length
       if (targetLength > padString.length) {
-        padString += padString.repeat(targetLength / padString.length); // append to original to ensure we are longer than needed
+        padString += padString.repeat(targetLength / padString.length) // append to original to ensure we are longer than needed
       }
-      return padString.slice(0, targetLength) + String(this);
+      return padString.slice(0, targetLength) + String(this)
     }
-  };
+  }
 }

@@ -5,27 +5,27 @@
   "projects": {
     "nrts-prc-public": {
       "root": "",
-      "sourceRoot": "src",
+      "sourceRoot": ".",
       "projectType": "application",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
             "outputPath": "dist",
-            "index": "src/index.html",
-            "main": "src/main.ts",
-            "tsConfig": "src/tsconfig.app.json",
-            "polyfills": "src/polyfills.ts",
+            "index": "index.html",
+            "main": "main.ts",
+            "tsConfig": "tsconfig.app.json",
+            "polyfills": "polyfills.ts",
             "assets": [
-              "src/assets",
-              "src/favicon.ico"
+              "assets",
+              "favicon.ico"
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/leaflet/dist/leaflet.css",
               "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
               "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css",
-              "src/styles.scss"
+              "styles.scss"
             ],
             "scripts": [
               "node_modules/jquery/dist/jquery.min.js",
@@ -34,7 +34,7 @@
               "node_modules/moment/min/moment.min.js",
               "node_modules/leaflet/dist/leaflet.js",
               "node_modules/leaflet.markercluster/dist/leaflet.markercluster.js",
-              "src/assets/js/utils.js"
+              "assets/js/utils.js"
             ]
           },
           "configurations": {
@@ -50,8 +50,8 @@
               "buildOptimizer": true,
               "fileReplacements": [
                 {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.prod.ts"
+                  "replace": "environments/environment.ts",
+                  "with": "environments/environment.prod.ts"
                 }
               ]
             }
@@ -78,10 +78,10 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "main": "src/test.ts",
-            "karmaConfig": "src/karma.conf.js",
-            "polyfills": "src/polyfills.ts",
-            "tsConfig": "src/tsconfig.spec.json",
+            "main": "test.ts",
+            "karmaConfig": "karma.conf.js",
+            "polyfills": "polyfills.ts",
+            "tsConfig": "tsconfig.spec.json",
             "scripts": [
               "node_modules/jquery/dist/jquery.min.js",
               "node_modules/popper.js/dist/umd/popper.min.js",
@@ -89,18 +89,18 @@
               "node_modules/moment/min/moment.min.js",
               "node_modules/leaflet/dist/leaflet.js",
               "node_modules/leaflet.markercluster/dist/leaflet.markercluster.js",
-              "src/assets/js/utils.js"
+              "assets/js/utils.js"
             ],
             "styles": [
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/leaflet/dist/leaflet.css",
               "node_modules/leaflet.markercluster/dist/MarkerCluster.css",
               "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css",
-              "src/styles.scss"
+              "styles.scss"
             ],
             "assets": [
-              "src/assets",
-              "src/favicon.ico"
+              "assets",
+              "favicon.ico"
             ]
           }
         },
@@ -108,8 +108,8 @@
           "builder": "@angular-devkit/build-angular:tslint",
           "options": {
             "tsConfig": [
-              "src/tsconfig.app.json",
-              "src/tsconfig.spec.json"
+              "tsconfig.app.json",
+              "tsconfig.spec.json"
             ],
             "exclude": []
           }

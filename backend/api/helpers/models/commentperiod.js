@@ -8,5 +8,5 @@ module.exports = require('../models')('CommentPeriod', {
 
   startDate: { type: Date, default: null },
   endDate: { type: Date, default: null },
-  isDeleted: { type: Boolean, default: false }
-});
+  isDeleted: { type: Boolean, default: false },
+})
