@@ -9,6 +9,7 @@
     "test": "echo Test suite should be run with `npm run tests` or `npm run tests-ci`",
     "tests": "ng test",
     "tests-ci": "ng test --watch=false --code-coverage",
+    "test:cov": "ng test --watch=false --code-coverage",
     "e2e": "ng e2e",
     "lint:ts": "ng lint nrts-prc-public --format=stylish",
     "lint:scss": "stylelint **/*.scss",
