@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "color-no-invalid-hex": true,
+    "font-family-no-missing-generic-family-keyword": true,
+    "no-empty-source": true,
+    "selector-type-no-unknown": [true, { "ignoreTypes": ["/^app-/", "/^mat-/"] }]
+  }
+}
