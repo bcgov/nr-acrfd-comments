@@ -9,8 +9,6 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
-    'prettier/prettier': 'error',
     'no-console': 'off',
   },
-  plugins: ['prettier'],
 }
