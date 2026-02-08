@@ -105,7 +105,8 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     useCreateIndex: true,
     useFindAndModify: false, // https://mongoosejs.com/docs/deprecations.html#-findandmodify-
   }
-  defaultLog.info('Connecting to:', dbConnection)
+  const safeDbLog = db_username ? `mongodb://${db_username}:***@${dbHost}/${dbDatabase}?authSource=admin` : `mongodb://${dbHost}/${dbDatabase}`
+  defaultLog.info('Connecting to:', safeDbLog)
   mongoose.Promise = global.Promise
   mongoose.connect(encodeURI(dbConnection), options).then(
     () => {
