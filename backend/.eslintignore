@@ -5,3 +5,6 @@ uploads/
 **/*.test.js
 **/*.spec.js
 **/test/**
+data_migration/
+seed/
+migrations/
