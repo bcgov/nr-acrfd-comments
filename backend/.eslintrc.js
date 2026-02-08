@@ -10,6 +10,29 @@ module.exports = {
   },
   rules: {
     'no-console': 'off',
-    'no-unused-vars': ['error', { argsIgnorePattern: '^_|^next$' }],
+    'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
   },
+  overrides: [
+    {
+      files: ['**/*.test.js', '**/test/**/*.js', '**/*.spec.js'],
+      env: {
+        jest: true,
+      },
+      globals: {
+        describe: 'readonly',
+        test: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        beforeAll: 'readonly',
+        afterEach: 'readonly',
+        afterAll: 'readonly',
+        spyOn: 'readonly',
+        jest: 'readonly',
+      },
+      rules: {
+        'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      },
+    },
+  ],
 }

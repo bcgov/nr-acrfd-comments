@@ -1,5 +1,7 @@
 node_modules/
 dist/
 coverage/
-**/*.spec.js
 uploads/
+**/*.test.js
+**/*.spec.js
+**/test/**
