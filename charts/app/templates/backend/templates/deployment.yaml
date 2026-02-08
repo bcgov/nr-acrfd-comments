@@ -37,7 +37,7 @@ spec:
           imagePullPolicy: {{ default "Always" .Values.backend.imagePullPolicy }}
           envFrom:
             - secretRef:
-                name: {{.Release.Name}}-backend
+                name: mongodb-secret
           env:
             - name: LOG_LEVEL
               value: info
