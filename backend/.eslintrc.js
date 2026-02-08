@@ -13,5 +13,4 @@ module.exports = {
     'no-console': 'off',
   },
   plugins: ['prettier'],
-  ignorePatterns: ['node_modules/', 'dist/', 'coverage/', '**/*.spec.js'],
 }
