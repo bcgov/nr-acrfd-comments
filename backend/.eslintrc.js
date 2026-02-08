@@ -3,10 +3,7 @@ module.exports = {
     node: true,
     es6: true,
   },
-  extends: [
-    'eslint:recommended',
-    'prettier',
-  ],
+  extends: ['eslint:recommended', 'prettier'],
   parserOptions: {
     ecmaVersion: 2018,
     sourceType: 'module',
@@ -16,10 +13,5 @@ module.exports = {
     'no-console': 'off',
   },
   plugins: ['prettier'],
-  ignorePatterns: [
-    'node_modules/',
-    'dist/',
-    'coverage/',
-    '**/*.spec.js',
-  ],
+  ignorePatterns: ['node_modules/', 'dist/', 'coverage/', '**/*.spec.js'],
 }
