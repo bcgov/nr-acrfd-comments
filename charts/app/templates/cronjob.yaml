@@ -2,10 +2,10 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "app.fullname" . }}-update-shapes
+  name: {{ include "fullname" . }}-update-shapes
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "app.labels" . | nindent 4 }}
+    {{- include "labels" . | nindent 4 }}
     app.kubernetes.io/component: cronjob
 spec:
   schedule: {{ .Values.cronjob.updateShapes.schedule | quote }}
@@ -17,10 +17,10 @@ spec:
       template:
         metadata:
           labels:
-            {{- include "app.labels" . | nindent 12 }}
+            {{- include "labels" . | nindent 12 }}
             app.kubernetes.io/component: cronjob
         spec:
-          serviceAccountName: {{ include "app.fullname" . }}-cronjob
+          serviceAccountName: {{ include "fullname" . }}-cronjob
           securityContext:
             runAsNonRoot: true
           containers:
@@ -67,8 +67,8 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ include "app.fullname" . }}-cronjob
+  name: {{ include "fullname" . }}-cronjob
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "app.labels" . | nindent 4 }}
+    {{- include "labels" . | nindent 4 }}
 {{- end }}
