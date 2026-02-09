@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/component: cronjob
 spec:
   schedule: {{ .Values.cronjob.updateShapes.schedule | quote }}
+  startingDeadlineSeconds: 999
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 1
