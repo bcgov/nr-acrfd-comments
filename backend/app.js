@@ -31,7 +31,7 @@ app.use(bodyParser.json({ limit: '10mb', extended: true }))
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }))
 
 // Enable CORS
-app.use(function (req, res, next) {
+app.use(function(req, res, next) {
   defaultLog.info(req.method, req.url)
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE, HEAD')
@@ -55,7 +55,12 @@ if (hostname !== 'localhost:3000') {
   swaggerConfig.schemes = ['https']
 }
 
-swaggerTools.initializeMiddleware(swaggerConfig, function (middleware) {
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'healthy' })
+})
+
+swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
   app.use(middleware.swaggerMetadata())
 
   // TODO: Fix this
@@ -100,7 +105,10 @@ swaggerTools.initializeMiddleware(swaggerConfig, function (middleware) {
     useCreateIndex: true,
     useFindAndModify: false, // https://mongoosejs.com/docs/deprecations.html#-findandmodify-
   }
-  defaultLog.info('Connecting to:', dbConnection)
+  const safeDbLog = db_username
+    ? `mongodb://${db_username}:***@${dbHost}/${dbDatabase}?authSource=admin`
+    : `mongodb://${dbHost}/${dbDatabase}`
+  defaultLog.info('Connecting to:', safeDbLog)
   mongoose.Promise = global.Promise
   mongoose.connect(encodeURI(dbConnection), options).then(
     () => {
@@ -118,7 +126,7 @@ swaggerTools.initializeMiddleware(swaggerConfig, function (middleware) {
       require('./api/helpers/models/review')
       defaultLog.info('db model loading done.')
 
-      app.listen(3000, '0.0.0.0', function () {
+      app.listen(3000, '0.0.0.0', function() {
         defaultLog.info('Started server on port 3000')
       })
     },

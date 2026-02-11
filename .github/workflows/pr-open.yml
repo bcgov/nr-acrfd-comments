@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        package: [backend, frontend, migrations]
+        package: [backend, frontend]
     timeout-minutes: 10
     steps:
       - uses: bcgov/action-builder-ghcr@2b24ac7f95e6a019064151498660437cca3202c5 # v4.2.1
@@ -39,8 +39,8 @@ jobs:
       oc_token: ${{ secrets.OC_TOKEN }}
     with:
       db_user: app-${{ github.event.number }}
-      params: --set global.secrets.persist=false
-      triggers: ('backend/' 'frontend/' 'migrations/' 'charts/' '.github/workflows/.deployer.yml')
+      params: --set global.secrets.persist=false --set global.databaseAlias=postgres-${{ github.event.number }}
+      triggers: ('backend/' 'frontend/' 'charts/' '.github/workflows/.deployer.yml')
 
   tests:
     name: Tests

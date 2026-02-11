@@ -1,0 +1,75 @@
+{{- if .Values.cronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "fullname" . }}-update-shapes
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "labels" . | nindent 4 }}
+    app.kubernetes.io/component: cronjob
+spec:
+  schedule: {{ .Values.cronjob.updateShapes.schedule | quote }}
+  startingDeadlineSeconds: 999
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "labels" . | nindent 12 }}
+            app.kubernetes.io/component: cronjob
+        spec:
+          serviceAccountName: {{ include "fullname" . }}-cronjob
+          securityContext:
+            runAsNonRoot: true
+          containers:
+            - name: update-shapes
+              image: "{{ .Values.global.registry | default "ghcr.io" }}/{{.Values.global.repository}}/backend:{{ .Values.global.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ default "Always" .Values.backend.imagePullPolicy }}
+              command:
+                - node
+                - /app/seed/shapesMigration/updateShapes.js
+              # Parameters for updateShapes script:
+              # <username> <password> <protocol> <host> <port> <client_id> <grant_type> <auth_endpoint>
+              args:
+                - "$(API_USERNAME)"
+                - "$(API_PASSWORD)"
+                - "$(API_PROTOCOL)"
+                - "$(API_HOST)"
+                - "$(API_PORT)"
+                - "$(CLIENT_ID)"
+                - "$(GRANT_TYPE)"
+                - "$(AUTH_ENDPOINT)"
+              envFrom:
+                - secretRef:
+                    name: mongodb-secret
+                - secretRef:
+                    name: {{ .Values.cronjob.updateShapes.secretName | default "nrts-prc-api-secrets" }}
+              env:
+                - name: LOG_LEVEL
+                  value: info
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              securityContext:
+                runAsNonRoot: true
+                readOnlyRootFilesystem: false
+                allowPrivilegeEscalation: false
+          restartPolicy: OnFailure
+{{- end }}
+---
+{{- if .Values.cronjob.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "fullname" . }}-cronjob
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "labels" . | nindent 4 }}
+{{- end }}
