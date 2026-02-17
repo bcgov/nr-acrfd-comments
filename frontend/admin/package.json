@@ -47,15 +47,15 @@
     "keycloak-js": "^26.1.4",
     "leaflet": "1.5.1",
     "linkify-it": "2.1.0",
-    "lodash": "4.17.11",
-    "moment": "2.24.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.30.1",
     "mygovbc-bootstrap-theme": "0.4.1",
     "ng-inline-svg": "8.5.1",
     "ng2-bootstrap-modal": "1.0.1",
     "ngx-pagination": "3.2.1",
     "rxjs": "6.5.3",
     "web-animations-js": "2.3.1",
-    "xlsx": "0.14.3",
+    "xlsx": "^0.18.5",
     "zone.js": "0.10.2"
   },
   "devDependencies": {
