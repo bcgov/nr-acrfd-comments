@@ -4,10 +4,14 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import * as moment from 'moment';
 import * as _ from 'lodash';
+import * as JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 import { Application } from 'app/models/application';
 import { Comment } from 'app/models/comment';
+import { ApiService } from 'app/services/api';
 import { CommentService } from 'app/services/comment.service';
+import { DocumentService } from 'app/services/document.service';
 import { ExportService } from 'app/services/export.service';
 
 class SortKey {
@@ -50,7 +54,9 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
+    private api: ApiService,
     private commentService: CommentService,
+    private documentService: DocumentService,
     private exportService: ExportService
   ) {}
 
@@ -149,6 +155,19 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
             // sanitize and flatten each comment object
             delete comment._commentPeriod;
             delete comment.commentNumber;
+            // sanitize commentAuthor
+            if (comment.commentAuthor) {
+              delete comment.commentAuthor['isPublished'];
+              delete comment.commentAuthor['_userId'];
+              if (comment.commentAuthor['internal']) {
+                delete comment.commentAuthor['internal']['isPublished'];
+              }
+            }
+            // sanitize review
+            if (comment.review) {
+              delete comment.review['isPublished'];
+              delete comment.review['_reviewerId'];
+            }
             // sanitize documents
             comment.documents.forEach(document => {
               delete document._id;
@@ -174,23 +193,119 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
             '_id',
             '_addedBy',
             'dateAdded',
+            'commentStatus',
+            'isPublished',
+            'review.reviewerDate',
+            'review.reviewerNotes',
             'commentAuthor.contactName',
             'commentAuthor.orgName',
             'commentAuthor.location',
             'commentAuthor.requestedAnonymous',
             'commentAuthor.internal.email',
             'commentAuthor.internal.phone',
-            'comment',
-            'review.reviewerDate',
-            'review.reviewerNotes',
-            'commentStatus',
-            'isPublished'
-            // document columns go here
+            'comment'
           ];
           this.exportService.exportAsExcelFile(flatComments, excelFileName, columnOrder);
         },
         error => console.log('error =', error)
       );
+  }
+
+  async exportToZip() {
+    let allComments: Comment[];
+    try {
+      allComments = await this.commentService
+        .getAllByApplicationId(this.application._id, 0, 1000000, null, { getDocuments: true }) // max 1M records
+        .pipe(takeUntil(this.ngUnsubscribe))
+        .toPromise();
+    } catch (error) {
+      console.log('error =', error);
+      return;
+    }
+
+    const zip = new JSZip();
+    const docFolder = zip.folder('documents');
+
+    // Fetch application-level documents
+    let appDocuments = [];
+    try {
+      appDocuments = await this.documentService
+        .getAllByApplicationId(this.application._id)
+        .pipe(takeUntil(this.ngUnsubscribe))
+        .toPromise();
+    } catch (e) {
+      console.warn('Could not fetch application documents', e);
+    }
+
+    // Collect all documents to download (application-level + comment-level)
+    const commentDocs = allComments.reduce((acc, comment) => acc.concat(comment.documents), []);
+    const allDocs = [...appDocuments, ...commentDocs].filter(doc => !!doc._id);
+
+    // Download all blobs in parallel
+    await Promise.all(
+      allDocs.map(async doc => {
+        try {
+          const blob = await this.api.getDocumentBlob(doc._id);
+          docFolder.file(doc.documentFileName, blob);
+        } catch (e) {
+          console.warn(`Could not download document: ${doc.documentFileName}`, e);
+        }
+      })
+    );
+
+    // Flatten comments for Excel, mirroring exportToExcel() but adding a documentNames column
+    const flatComments = allComments.map(comment => {
+      const docNames = comment.documents
+        .map(d => d.displayName || d.documentFileName)
+        .join(', ');
+
+      delete comment._commentPeriod;
+      delete comment.commentNumber;
+      comment.documents = [];
+      // sanitize commentAuthor
+      if (comment.commentAuthor) {
+        delete comment.commentAuthor['isPublished'];
+        delete comment.commentAuthor['_userId'];
+        if (comment.commentAuthor['internal']) {
+          delete comment.commentAuthor['internal']['isPublished'];
+        }
+      }
+      // sanitize review
+      if (comment.review) {
+        delete comment.review['isPublished'];
+        delete comment.review['_reviewerId'];
+      }
+      comment['cl_file'] = this.application.meta.clFile;
+      comment['documentNames'] = docNames;
+      return this.flatten_fastest(comment);
+    });
+
+    const excelFileName =
+      'comments-' + this.application.meta.applicants.replace(/\s/g, '_') + moment(new Date()).format('-YYYYMMDD');
+    const columnOrder: string[] = [
+      'cl_file',
+      '_id',
+      '_addedBy',
+      'dateAdded',
+      'commentStatus',
+      'isPublished',
+      'review.reviewerDate',
+      'review.reviewerNotes',
+      'documentNames',
+      'commentAuthor.contactName',
+      'commentAuthor.orgName',
+      'commentAuthor.location',
+      'commentAuthor.requestedAnonymous',
+      'commentAuthor.internal.email',
+      'commentAuthor.internal.phone',
+      'comment'
+    ];
+
+    const excelBuffer = this.exportService.exportAsExcelBuffer(flatComments, columnOrder);
+    zip.file(`${excelFileName}.xlsx`, excelBuffer);
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    saveAs(zipBlob, `${excelFileName}.zip`);
   }
 
   //
