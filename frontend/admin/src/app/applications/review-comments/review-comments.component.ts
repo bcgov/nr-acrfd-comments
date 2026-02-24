@@ -340,6 +340,10 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
     table.comments td { padding: 8px 12px; vertical-align: top; border-top: 1px solid #e0e0e0; }
     td.comment-text { min-width: 400px; width: 30%; white-space: pre-wrap; word-break: break-word; }
     td.date-col { min-width: 100px; white-space: nowrap; }
+    .filter-bar { margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .filter-bar label { font-weight: bold; color: #003366; white-space: nowrap; }
+    .filter-bar input { padding: 6px 10px; font-size: 14px; border: 1px solid #bbb; border-radius: 4px; width: 320px; }
+    .filter-bar .filter-count { font-size: 13px; color: #555; }
     .generated { font-size: 12px; color: #888; margin-top: 16px; }
   </style>
 </head>
@@ -358,6 +362,10 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
   </div>
 
   <h2>Comments (${escHtml(comments.length)})</h2>
+  <div class="filter-bar">
+    <label for="filterInput">Filter:</label>
+    <input type="text" id="filterInput" placeholder="" autocomplete="off">
+  </div>
   <div class="table-wrapper">
     <table class="comments" id="commentsTable">
       <thead>
@@ -414,6 +422,25 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
       // default: sort ascending by date
       headers[0].classList.add('asc');
       sortTable(0, 'asc');
+
+      // filter
+      var filterInput = document.getElementById('filterInput');
+      var filterCount = document.getElementById('filterCount');
+      var totalRows = tbody.querySelectorAll('tr').length;
+
+      function applyFilter() {
+        var term = filterInput.value.toLowerCase().trim();
+        var rows = tbody.querySelectorAll('tr');
+        var visible = 0;
+        rows.forEach(function (row) {
+          var text = row.textContent.toLowerCase();
+          var show = !term || text.indexOf(term) !== -1;
+          row.style.display = show ? '' : 'none';
+          if (show) { visible++; }
+        });
+      }
+
+      filterInput.addEventListener('input', applyFilter);
     })();
   </script>
 </body>
