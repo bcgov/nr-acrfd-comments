@@ -2,8 +2,7 @@ import { Injectable } from '@angular/core';
 import { JwtUtil } from 'app/jwt-util';
 import { Observable } from 'rxjs';
 import * as _ from 'lodash';
-
-declare var Keycloak: any;
+import Keycloak from 'keycloak-js';
 
 @Injectable()
 export class KeycloakService {
@@ -70,27 +69,13 @@ export class KeycloakService {
     return decodeURIComponent(results[2].replace(/\+/g, ' '));
   }
 
-  private loadKeycloakScript(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if ((window as any).Keycloak) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = `${this.keycloakUrl}/js/keycloak.js`;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load Keycloak JS from ${this.keycloakUrl}`));
-      document.head.appendChild(script);
-    });
-  }
-
   init(): Promise<any> {
     this.loggedOut = this.getParameterByName('loggedout');
 
     if (this.keycloakEnabled) {
       // Bootup KC
       this.keycloakEnabled = true;
-      return this.loadKeycloakScript().then(() => new Promise<void>((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         const config = {
           url: this.keycloakUrl,
           realm: this.keycloakRealm,
@@ -124,10 +109,10 @@ export class KeycloakService {
         this.keycloakAuth.onTokenExpired = () => {
           this.keycloakAuth
             .updateToken()
-            .success(refreshed => {
+            .then(refreshed => {
               console.log('KC refreshed token?:', refreshed);
             })
-            .error(err => {
+            .catch(err => {
               console.log('KC refresh error:', err);
             });
         };
@@ -142,7 +127,7 @@ export class KeycloakService {
 
         this.keycloakAuth
           .init(initOptions)
-          .success(auth => {
+          .then(auth => {
             // console.log('KC Refresh Success?:', this.keycloakAuth.authServerUrl);
             console.log('KC Success:', auth);
             if (!auth) {
@@ -156,11 +141,11 @@ export class KeycloakService {
               resolve();
             }
           })
-          .error(err => {
+          .catch(err => {
             console.log('KC error:', err);
             reject();
           });
-      }));
+      });
     }
   }
 
@@ -203,12 +188,12 @@ export class KeycloakService {
     return new Observable(observer => {
       this.keycloakAuth
         .updateToken(30)
-        .success(refreshed => {
+        .then(refreshed => {
           console.log('KC refreshed token?:', refreshed);
           observer.next();
           observer.complete();
         })
-        .error(err => {
+        .catch(err => {
           console.log('KC refresh error:', err);
           observer.error();
         });
