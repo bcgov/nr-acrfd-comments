@@ -141,33 +141,30 @@ export class ApiService {
     // this.jwtHelper = new JwtHelperService();
     const currentUser = JSON.parse(window.localStorage.getItem('currentUser'))
     this.token = currentUser && currentUser.token
-    this.isMS = window.navigator.msSaveOrOpenBlob ? true : false
+    this.isMS = (window.navigator as any).msSaveOrOpenBlob ? true : false
 
     const { hostname } = window.location
-    switch (hostname) {
-      case 'localhost':
-        // Local
-        this.pathAPI = 'http://localhost:3001/api'
-        this.env = 'local'
-        break
-
-      case 'acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca':
-        this.pathAPI = 'https://acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca/api'
-        this.env = 'dev'
-        break
-      case 'acrfd-86cabb-test.apps.silver.devops.gov.bc.ca':
-        this.pathAPI = 'https://acrfd-86cabb-test.apps.silver.devops.gov.bc.ca/api'
-        this.env = 'test'
-        break
-      case 'acrfd-admin-86cabb-dev.apps.silver.devops.gov.bc.ca':
-        this.pathAPI = 'https://nrts-prc-api-86cabb-dev.apps.silver.devops.gov.bc.ca/api'
-        this.env = 'dev'
-        break
-
-      default:
-        // Prod
-        this.pathAPI = 'https://comment.nrs.gov.bc.ca/api'
-        this.env = 'prod'
+    if (hostname === 'localhost') {
+      // Local
+      this.pathAPI = 'http://localhost:3001/api'
+      this.env = 'local'
+    } else if (
+      hostname === 'acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca' ||
+      hostname === 'acrfd-admin-86cabb-dev.apps.silver.devops.gov.bc.ca'
+    ) {
+      this.pathAPI = `${window.location.origin}/api`
+      this.env = 'dev'
+    } else if (hostname === 'acrfd-86cabb-test.apps.silver.devops.gov.bc.ca') {
+      this.pathAPI = `${window.location.origin}/api`
+      this.env = 'test'
+    } else if (/^nr-acrfd-comments-\d+\.apps\.silver\.devops\.gov\.bc\.ca$/.test(hostname)) {
+      // PR deployments: backend co-deployed on the same host
+      this.pathAPI = `${window.location.origin}/api`
+      this.env = 'dev'
+    } else {
+      // Prod
+      this.pathAPI = 'https://comment.nrs.gov.bc.ca/api'
+      this.env = 'prod'
     }
   }
 
@@ -689,7 +686,7 @@ export class ApiService {
     const filename = document.documentFileName
 
     if (this.isMS) {
-      window.navigator.msSaveBlob(blob, filename)
+      (window.navigator as any).msSaveBlob(blob, filename)
     } else {
       const url = window.URL.createObjectURL(blob)
       const a = window.document.createElement('a')
@@ -708,7 +705,7 @@ export class ApiService {
     const filename = document.documentFileName
 
     if (this.isMS) {
-      window.navigator.msSaveBlob(blob, filename)
+      (window.navigator as any).msSaveBlob(blob, filename)
     } else {
       const tab = window.open()
       const fileURL = URL.createObjectURL(blob)
