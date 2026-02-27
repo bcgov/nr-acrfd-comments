@@ -66,4 +66,5 @@ EXPOSE 3000
 # (not executable commands in runtime container)
 
 # Start both apps on different ports
-CMD ["sh", "-c", "http-server dist/admin -p 4200 -c-1 -s & http-server dist/public -p 3000 -c-1 -s"]
+# Serve dist directory on port 4200 so /admin/* maps to dist/admin/*
+CMD ["sh", "-c", "http-server dist -p 4200 -c-1 -s & http-server dist/public -p 3000 -c-1 -s"]
