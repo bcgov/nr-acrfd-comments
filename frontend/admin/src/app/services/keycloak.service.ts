@@ -19,6 +19,7 @@ export class KeycloakService {
     if (origin === 'http://localhost:4200') {
       // Local development - Keycloak disabled
       this.keycloakEnabled = false;
+      console.log('Local')
     } else if (
       origin === 'https://nrts-prc-dev.pathfinder.gov.bc.ca' ||
       origin === 'https://nrts-prc-master.pathfinder.gov.bc.ca' ||
@@ -31,6 +32,7 @@ export class KeycloakService {
       this.keycloakEnabled = true;
       this.keycloakUrl = 'https://dev.loginproxy.gov.bc.ca/auth';
       this.keycloakRealm = 'standard';
+      console.log('Dev')
     } else if (
       origin === 'https://nrts-prc-test.pathfinder.gov.bc.ca' ||
       origin === 'https://acrfd-86cabb-test.apps.silver.devops.gov.bc.ca'
@@ -39,11 +41,13 @@ export class KeycloakService {
       this.keycloakEnabled = true;
       this.keycloakUrl = 'https://test.loginproxy.gov.bc.ca/auth';
       this.keycloakRealm = 'standard';
+      console.log('Test')
     } else {
       // Prod
       this.keycloakEnabled = true;
       this.keycloakUrl = 'https://loginproxy.gov.bc.ca/auth';
       this.keycloakRealm = 'standard';
+      console.log('Prod')
     }
   }
 
@@ -85,7 +89,7 @@ export class KeycloakService {
     if (this.keycloakEnabled) {
       // Bootup KC
       this.keycloakEnabled = true;
-      return this.loadKeycloakScript().then(() => new Promise((resolve, reject) => {
+      return this.loadKeycloakScript().then(() => new Promise<void>((resolve, reject) => {
         const config = {
           url: this.keycloakUrl,
           realm: this.keycloakRealm,
