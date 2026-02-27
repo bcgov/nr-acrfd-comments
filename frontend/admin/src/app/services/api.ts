@@ -159,7 +159,7 @@ export class ApiService {
       this.env = 'test'
     } else if (/^nr-acrfd-comments-\d+\.apps\.silver\.devops\.gov\.bc\.ca$/.test(hostname)) {
       // PR deployments: backend co-deployed on the same host
-      this.pathAPI = `${window.location.origin}/api`
+      this.pathAPI = `https://nrts-prc-api-86cabb-dev.apps.silver.devops.gov.bc.ca/api`
       this.env = 'dev'
     } else {
       // Prod
