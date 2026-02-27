@@ -14,31 +14,36 @@ export class KeycloakService {
   private loggedOut: string;
 
   constructor() {
-    switch (window.location.origin) {
-      case 'http://localhost:4200':
-      case 'https://nrts-prc-dev.pathfinder.gov.bc.ca':
-      case 'https://nrts-prc-master.pathfinder.gov.bc.ca':
-      case 'https://acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca':
-      case 'https://acrfd-admin-86cabb-dev.apps.silver.devops.gov.bc.ca':
-        // Local, Dev, Master
-        this.keycloakEnabled = true;
-        this.keycloakUrl = 'https://dev.loginproxy.gov.bc.ca/auth';
-        this.keycloakRealm = 'standard';
-        break;
+    const origin = window.location.origin;
 
-      case 'https://nrts-prc-test.pathfinder.gov.bc.ca':
-      case 'https://acrfd-86cabb-test.apps.silver.devops.gov.bc.ca':
-        // Test
-        this.keycloakEnabled = true;
-        this.keycloakUrl = 'https://test.loginproxy.gov.bc.ca/auth';
-        this.keycloakRealm = 'standard';
-        break;
-
-      default:
-        // Prod
-        this.keycloakEnabled = true;
-        this.keycloakUrl = 'https://loginproxy.gov.bc.ca/auth';
-        this.keycloakRealm = 'standard';
+    if (origin === 'http://localhost:4200') {
+      // Local development - Keycloak disabled
+      this.keycloakEnabled = false;
+    } else if (
+      origin === 'https://nrts-prc-dev.pathfinder.gov.bc.ca' ||
+      origin === 'https://nrts-prc-master.pathfinder.gov.bc.ca' ||
+      origin === 'https://acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca' ||
+      origin === 'https://acrfd-admin-86cabb-dev.apps.silver.devops.gov.bc.ca' ||
+      // PR deployments: nr-acrfd-comments-<pr-number>.apps.silver.devops.gov.bc.ca
+      /^https:\/\/nr-acrfd-comments-\d+\.apps\.silver\.devops\.gov\.bc\.ca$/.test(origin)
+    ) {
+      // Dev, Master, PR deployments
+      this.keycloakEnabled = true;
+      this.keycloakUrl = 'https://dev.loginproxy.gov.bc.ca/auth';
+      this.keycloakRealm = 'standard';
+    } else if (
+      origin === 'https://nrts-prc-test.pathfinder.gov.bc.ca' ||
+      origin === 'https://acrfd-86cabb-test.apps.silver.devops.gov.bc.ca'
+    ) {
+      // Test
+      this.keycloakEnabled = true;
+      this.keycloakUrl = 'https://test.loginproxy.gov.bc.ca/auth';
+      this.keycloakRealm = 'standard';
+    } else {
+      // Prod
+      this.keycloakEnabled = true;
+      this.keycloakUrl = 'https://loginproxy.gov.bc.ca/auth';
+      this.keycloakRealm = 'standard';
     }
   }
 
@@ -60,13 +65,27 @@ export class KeycloakService {
     return decodeURIComponent(results[2].replace(/\+/g, ' '));
   }
 
+  private loadKeycloakScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if ((window as any).Keycloak) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = `${this.keycloakUrl}/js/keycloak.js`;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load Keycloak JS from ${this.keycloakUrl}`));
+      document.head.appendChild(script);
+    });
+  }
+
   init(): Promise<any> {
     this.loggedOut = this.getParameterByName('loggedout');
 
     if (this.keycloakEnabled) {
       // Bootup KC
       this.keycloakEnabled = true;
-      return new Promise((resolve, reject) => {
+      return this.loadKeycloakScript().then(() => new Promise((resolve, reject) => {
         const config = {
           url: this.keycloakUrl,
           realm: this.keycloakRealm,
@@ -136,7 +155,7 @@ export class KeycloakService {
             console.log('KC error:', err);
             reject();
           });
-      });
+      }));
     }
   }
 
