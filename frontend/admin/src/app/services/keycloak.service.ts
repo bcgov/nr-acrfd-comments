@@ -15,7 +15,8 @@ export class KeycloakService {
 
   constructor() {
     const origin = window.location.origin;
-
+    
+    console.log('~~~')
     if (origin === 'http://localhost:4200') {
       // Local development - Keycloak disabled
       this.keycloakEnabled = false;
