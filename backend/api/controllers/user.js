@@ -110,7 +110,7 @@ var getUsers = function (role, query, fields) {
     var User = mongoose.model('User')
     var projection = {}
 
-    // Fields we always return
+    // Fields we always return //
     var defaultFields = ['_id', 'displayName', 'roles', 'tags']
     _.each(defaultFields, function (f) {
       projection[f] = 1
