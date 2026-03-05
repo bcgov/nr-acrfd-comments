@@ -39,12 +39,14 @@ jobs:
       oc_token: ${{ secrets.OC_TOKEN }}
     with:
       db_user: app-${{ github.event.number }}
-      params: --set global.secrets.persist=false --set global.databaseAlias=postgres-${{ github.event.number }}
+      params:
+        --set global.secrets.persist=false --set global.databaseAlias=postgres-${{
+        github.event.number }}
       triggers: ('backend/' 'frontend/' 'charts/' '.github/workflows/.deployer.yml')
 
   tests:
     name: Tests
-    if: needs.deploys.outputs.triggered == 'true'
+    if: needs.deploys.result == 'success'
     needs: [deploys]
     uses: ./.github/workflows/.tests.yml
 
