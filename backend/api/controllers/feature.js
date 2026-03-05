@@ -168,7 +168,7 @@ exports.protectedPut = function (args, res, next) {
   // TODO sanitize/update audits.
 
   var Feature = require('mongoose').model('Feature')
-  Feature.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }, function (err, o) {
+  Feature.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
       return Actions.sendResponse(res, 200, o)
@@ -185,7 +185,7 @@ exports.protectedPublish = function (args, res, next) {
   defaultLog.info('Publish Feature:', objId)
 
   var Feature = require('mongoose').model('Feature')
-  Feature.findOne({ _id: objId }, function (err, o) {
+  Feature.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -211,7 +211,7 @@ exports.protectedUnPublish = function (args, res, next) {
   defaultLog.info('UnPublish Feature:', objId)
 
   var Feature = require('mongoose').model('Feature')
-  Feature.findOne({ _id: objId }, function (err, o) {
+  Feature.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 

@@ -160,11 +160,9 @@ exports.protectedPut = function (args, res, next) {
   // TODO sanitize/update audits.
 
   var commentperiod = require('mongoose').model('CommentPeriod')
-  commentperiod.findOneAndUpdate(
-    { _id: objId },
-    obj,
-    { upsert: false, new: true },
-    function (err, o) {
+  commentperiod
+    .findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true })
+    .then(function (o) {
       if (o) {
         defaultLog.debug('o:', JSON.stringify(o))
         return Actions.sendResponse(res, 200, o)
@@ -172,8 +170,7 @@ exports.protectedPut = function (args, res, next) {
         defaultLog.warn("Couldn't find that object!")
         return Actions.sendResponse(res, 404, {})
       }
-    },
-  )
+    })
 }
 
 //  Delete a new CommentPeriod
@@ -182,7 +179,7 @@ exports.protectedDelete = function (args, res, next) {
   defaultLog.info('Delete CommentPeriod:', objId)
 
   var commentperiod = require('mongoose').model('CommentPeriod')
-  commentperiod.findOne({ _id: objId, isDeleted: false }, function (err, o) {
+  commentperiod.findOne({ _id: objId, isDeleted: false }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -211,7 +208,7 @@ exports.protectedPublish = function (args, res, next) {
   defaultLog.info('Publish CommentPeriod:', objId)
 
   var commentperiod = require('mongoose').model('CommentPeriod')
-  commentperiod.findOne({ _id: objId }, function (err, o) {
+  commentperiod.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -237,7 +234,7 @@ exports.protectedUnPublish = function (args, res, next) {
   defaultLog.info('UnPublish CommentPeriod:', objId)
 
   var commentperiod = require('mongoose').model('CommentPeriod')
-  commentperiod.findOne({ _id: objId }, function (err, o) {
+  commentperiod.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 

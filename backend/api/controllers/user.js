@@ -94,7 +94,7 @@ exports.protectedPut = function (args, res, next) {
   }
 
   var User = require('mongoose').model('User')
-  User.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }, function (err, o) {
+  User.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
       return Actions.sendResponse(res, 200, o)

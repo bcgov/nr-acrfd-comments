@@ -293,7 +293,7 @@ exports.protectedPut = function (args, res, next) {
   // TODO sanitize/update audits.
 
   var Comment = require('mongoose').model('Comment')
-  Comment.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }, function (err, o) {
+  Comment.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
       return Actions.sendResponse(res, 200, o)
@@ -310,7 +310,7 @@ exports.protectedPublish = function (args, res, next) {
   defaultLog.info('Publish Comment:', objId)
 
   var Comment = require('mongoose').model('Comment')
-  Comment.findOne({ _id: objId }, function (err, o) {
+  Comment.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -338,7 +338,7 @@ exports.protectedUnPublish = function (args, res, next) {
   defaultLog.info('UnPublish Comment:', objId)
 
   var Comment = require('mongoose').model('Comment')
-  Comment.findOne({ _id: objId }, function (err, o) {
+  Comment.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 

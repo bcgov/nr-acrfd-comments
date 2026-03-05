@@ -342,7 +342,7 @@ exports.protectedDelete = function (args, res, next) {
   defaultLog.info('Delete Document:', objId)
 
   var Document = require('mongoose').model('Document')
-  Document.findOne({ _id: objId, isDeleted: false }, function (err, o) {
+  Document.findOne({ _id: objId, isDeleted: false }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -369,7 +369,7 @@ exports.protectedPublish = function (args, res, next) {
   defaultLog.info('Publish Document:', objId)
 
   var Document = require('mongoose').model('Document')
-  Document.findOne({ _id: objId }, function (err, o) {
+  Document.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -395,7 +395,7 @@ exports.protectedUnPublish = function (args, res, next) {
   defaultLog.info('UnPublish Document:', objId)
 
   var Document = require('mongoose').model('Document')
-  Document.findOne({ _id: objId }, function (err, o) {
+  Document.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -458,11 +458,8 @@ exports.protectedPut = function (args, res, next) {
           obj.displayName = displayName
           obj.passedAVCheck = true
           var Document = require('mongoose').model('Document')
-          Document.findOneAndUpdate(
-            { _id: objId },
-            obj,
-            { upsert: false, new: true },
-            function (err, o) {
+          Document.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(
+            function (o) {
               if (o) {
                 // defaultLog.info("o:", o);
                 return Actions.sendResponse(res, 200, o)

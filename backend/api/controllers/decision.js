@@ -150,7 +150,7 @@ exports.protectedPut = function (args, res, next) {
   defaultLog.info('Incoming updated object:', obj)
 
   var Decision = require('mongoose').model('Decision')
-  Decision.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }, function (err, o) {
+  Decision.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
       return Actions.sendResponse(res, 200, o)
@@ -166,7 +166,7 @@ exports.protectedDelete = function (args, res, next) {
   defaultLog.info('Delete Decision:', objId)
 
   var decision = require('mongoose').model('Decision')
-  decision.findOne({ _id: objId, isDeleted: false }, function (err, o) {
+  decision.findOne({ _id: objId, isDeleted: false }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -194,7 +194,7 @@ exports.protectedPublish = function (args, res, next) {
   defaultLog.info('Publish Decision:', objId)
 
   var decision = require('mongoose').model('Decision')
-  decision.findOne({ _id: objId }, function (err, o) {
+  decision.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -220,7 +220,7 @@ exports.protectedUnPublish = function (args, res, next) {
   defaultLog.info('UnPublish Decision:', objId)
 
   var decision = require('mongoose').model('Decision')
-  decision.findOne({ _id: objId }, function (err, o) {
+  decision.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
