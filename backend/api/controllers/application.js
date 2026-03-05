@@ -296,7 +296,7 @@ exports.protectedDelete = function (args, res, next) {
   defaultLog.info('Delete Application:', appId)
 
   var Application = mongoose.model('Application')
-  Application.findOne({ _id: appId }, function (err, o) {
+  Application.findOne({ _id: appId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -322,16 +322,14 @@ var doFeaturePubUnPub = function (action, objId) {
   return new Promise(function (resolve, reject) {
     var Feature = require('mongoose').model('Feature')
 
-    Feature.find({ applicationID: objId }, function (err, featureObjects) {
-      if (err) {
-        reject(err)
-      } else {
+    Feature.find({ applicationID: objId })
+      .then(function (featureObjects) {
         var promises = []
         _.each(featureObjects, function (f) {
           promises.push(f)
         })
         // Iterate through all the promises before returning.
-        Promise.resolve()
+        return Promise.resolve()
           .then(function () {
             return promises.reduce(function (previousItem, currentItem) {
               return previousItem.then(function () {
@@ -357,8 +355,8 @@ var doFeaturePubUnPub = function (action, objId) {
             defaultLog.info('done Pub/UnPub all features.')
             resolve()
           })
-      }
-    })
+      })
+      .catch(reject)
   })
 }
 
@@ -476,11 +474,8 @@ exports.protectedPut = function (args, res, next) {
   // TODO sanitize/update audits.
 
   var Application = require('mongoose').model('Application')
-  Application.findOneAndUpdate(
-    { _id: objId },
-    obj,
-    { upsert: false, new: true },
-    function (err, o) {
+  Application.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(
+    function (o) {
       if (o) {
         defaultLog.debug('o:', JSON.stringify(o))
         return Actions.sendResponse(res, 200, o)
@@ -498,7 +493,7 @@ exports.protectedPublish = function (args, res, next) {
   defaultLog.info('Publish Application:', objId)
 
   var Application = require('mongoose').model('Application')
-  Application.findOne({ _id: objId }, function (err, o) {
+  Application.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -530,7 +525,7 @@ exports.protectedUnPublish = function (args, res, next) {
   defaultLog.info('UnPublish Application:', objId)
 
   var Application = require('mongoose').model('Application')
-  Application.findOne({ _id: objId }, function (err, o) {
+  Application.findOne({ _id: objId }).then(function (o) {
     if (o) {
       defaultLog.debug('o:', JSON.stringify(o))
 
@@ -562,7 +557,7 @@ exports.protectedRefresh = function (args, res, next) {
   defaultLog.info('Refresh Application, _id:', objId)
 
   var Application = require('mongoose').model('Application')
-  Application.findOne({ _id: objId }, function (err, applicationObject) {
+  Application.findOne({ _id: objId }).then(function (applicationObject) {
     if (applicationObject) {
       defaultLog.debug('application before refresh:', JSON.stringify(applicationObject))
 
