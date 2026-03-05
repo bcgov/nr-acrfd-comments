@@ -31,9 +31,24 @@ app.use(bodyParser.json({ limit: '10mb', extended: true }))
 app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }))
 
 // Enable CORS
-app.use(function(req, res, next) {
+// Access-Control-Allow-Origin cannot be '*' when Allow-Credentials is true;
+// browsers reject that combination. Instead, echo back the requesting origin
+// when it matches an allowed pattern.
+const ALLOWED_ORIGINS = [
+  /^https?:\/\/localhost(:\d+)?$/,
+  /^https:\/\/acrfd(-admin)?-86cabb-(dev|test)\.apps\.silver\.devops\.gov\.bc\.ca$/,
+  /^https:\/\/nrts-prc-api-86cabb-(dev|test)\.apps\.silver\.devops\.gov\.bc\.ca$/,
+  /^https:\/\/nr-acrfd-comments(-admin)?(-\d+)?\.apps\.silver\.devops\.gov\.bc\.ca$/,
+  /^https:\/\/comment\.nrs\.gov\.bc\.ca$/,
+]
+
+app.use(function (req, res, next) {
   defaultLog.info(req.method, req.url)
-  res.setHeader('Access-Control-Allow-Origin', '*')
+  const origin = req.headers.origin
+  if (origin && ALLOWED_ORIGINS.some((pattern) => pattern.test(origin))) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Vary', 'Origin')
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE, HEAD')
   res.setHeader(
     'Access-Control-Allow-Headers',
@@ -60,7 +75,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'healthy' })
 })
 
-swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
+swaggerTools.initializeMiddleware(swaggerConfig, function (middleware) {
   app.use(middleware.swaggerMetadata())
 
   // TODO: Fix this
@@ -118,7 +133,7 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
       require('./api/helpers/models/review')
       defaultLog.info('db model loading done.')
 
-      app.listen(3000, '0.0.0.0', function() {
+      app.listen(3000, '0.0.0.0', function () {
         defaultLog.info('Started server on port 3000')
       })
     },
