@@ -128,19 +128,19 @@ test.describe('Application lifecycle', () => {
     await row2.locator('button:has-text("View Application")').click()
     await page.waitForURL(/\/admin\/a\/(?!0)[^/]+$/, { timeout: 15_000 })
 
-    // // Unpublish the application
-    // await page.click('button[title="Unpublish application"]')
-    // // The Unpublish button is replaced by the Publish button once unpublished
-    // await expect(page.locator('button[title="Publish application"]')).toBeVisible({
-    //   timeout: 10_000,
-    // })
+    // Unpublish the application
+    await page.click('button[title="Unpublish application"]')
+    // The Unpublish button is replaced by the Publish button once unpublished
+    await expect(page.locator('button[title="Publish application"]')).toBeVisible({
+      timeout: 10_000,
+    })
 
-    // // Delete the application
-    // await page.click('button[title="Remove this application from ACRFD"]')
-    // // Confirm the delete modal
-    // await page.locator('.modal-footer button', { hasText: 'OK' }).click()
+    // Delete the application
+    await page.click('button[title="Remove this application from ACRFD"]')
+    // Confirm the delete modal
+    await page.locator('.modal-footer button', { hasText: 'OK' }).click()
 
-    // // After deletion we should be redirected back to the admin list
-    // await expect(page.locator('#keywordInput')).toBeVisible({ timeout: 15_000 })
+    // After deletion we should be redirected back to the admin list
+    await expect(page.locator('#keywordInput')).toBeVisible({ timeout: 15_000 })
   })
 })
