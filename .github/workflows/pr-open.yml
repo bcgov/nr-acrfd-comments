@@ -49,6 +49,9 @@ jobs:
     if: needs.deploys.result == 'success'
     needs: [deploys]
     uses: ./.github/workflows/.tests.yml
+    secrets:
+      e2e_admin_username: ${{ secrets.E2E_ADMIN_USERNAME }}
+      e2e_admin_password: ${{ secrets.E2E_ADMIN_PASSWORD }}
 
   results:
     name: PR Results

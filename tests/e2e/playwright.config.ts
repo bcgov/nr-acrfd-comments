@@ -1,4 +1,10 @@
 import { defineConfig, devices } from '@playwright/test'
+import { config as loadDotenv } from 'dotenv'
+import { resolve } from 'path'
+
+// Explicitly load .env from the same directory as this config file so that
+// credentials are always available regardless of cwd or how Playwright is invoked.
+loadDotenv({ path: resolve(__dirname, '.env') })
 
 /**
  * In CI both vars are set to the same deployed host

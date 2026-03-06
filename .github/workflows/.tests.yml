@@ -8,6 +8,13 @@ on:
         description: PR number, test or prod
         default: ${{ github.event.number }}
         type: string
+    secrets:
+      e2e_admin_username:
+        description: Keycloak username for admin e2e tests
+        required: true
+      e2e_admin_password:
+        description: Keycloak password for admin e2e tests
+        required: true
 
 env:
   DOMAIN: apps.silver.devops.gov.bc.ca
@@ -67,8 +74,11 @@ jobs:
 
       - name: Run Tests
         env:
+          E2E_ENVIRONMENT: dev
           E2E_ADMIN_BASE_URL: https://${{ env.PREFIX }}.${{ env.DOMAIN }}/
           E2E_PUBLIC_BASE_URL: https://${{ env.PREFIX }}.${{ env.DOMAIN }}/
+          E2E_ADMIN_USERNAME: ${{ secrets.e2e_admin_username }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.e2e_admin_password }}
           CI: 'true'
         run: |
           npx playwright test --project="${{ matrix.project }}" --reporter=html
