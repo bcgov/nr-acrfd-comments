@@ -132,13 +132,13 @@ exports.protectedDelete = function (args, res, next) {
   }
 
   // Straight delete, don't isDelete=true them.
-  Feature.remove(query, function (err, data) {
-    if (data) {
+  Feature.deleteMany(query)
+    .then(function (data) {
       return Actions.sendResponse(res, 200, data)
-    } else {
+    })
+    .catch(function (err) {
       return Actions.sendResponse(res, 400, err)
-    }
-  })
+    })
 }
 
 //  Create a new Feature
