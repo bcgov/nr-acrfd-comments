@@ -20,6 +20,11 @@ test.describe('Application lifecycle', () => {
     `Lifecycle test skipped — E2E_ENVIRONMENT is "${currentEnv || 'unset'}". Must be one of: ${ALLOWED_ENVIRONMENTS.join(', ')}.`,
   )
 
+  test.skip(
+    currentEnv !== 'local' && (!process.env.E2E_ADMIN_USERNAME || !process.env.E2E_ADMIN_PASSWORD),
+    'Lifecycle test skipped — E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD must be set for non-local environments.',
+  )
+
   test.setTimeout(60_000)
 
   // ---------------------------------------------------------------------------

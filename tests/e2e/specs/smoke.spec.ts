@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { loginToAdmin } from '../helpers/admin-auth'
 
 const TITLE_TEXT = 'Applications, Comments'
 
@@ -8,6 +9,7 @@ const PUBLIC_BASE = (process.env.E2E_PUBLIC_BASE_URL ?? 'http://localhost:3000')
 
 test.describe('Admin app smoke', () => {
   test('loads and shows the site header', async ({ page }) => {
+    await loginToAdmin(page)
     await page.goto(`${ADMIN_BASE}/admin/`)
 
     // The navbar brand title is present on every page of both apps

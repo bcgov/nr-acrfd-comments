@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test'
+import { test, Page } from '@playwright/test'
 
 const ADMIN_BASE = (process.env.E2E_ADMIN_BASE_URL ?? 'http://localhost:4200').replace(/\/$/, '')
 
@@ -22,7 +22,8 @@ export async function loginToAdmin(page: Page): Promise<void> {
   const password = process.env.E2E_ADMIN_PASSWORD ?? ''
 
   if (!username || !password) {
-    throw new Error('E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD must be set to run admin tests')
+    test.skip(true, 'E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD must be set to run admin tests')
+    return
   }
 
   await page.goto(`${ADMIN_BASE}/admin/`)
