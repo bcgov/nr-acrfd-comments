@@ -4,8 +4,8 @@ var mongoose = require('mongoose')
 var Actions = require('../helpers/actions')
 var Utils = require('../helpers/utils')
 
-var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
+var getSanitizedFields = function(fields) {
+  return _.remove(fields, function(f) {
     return (
       _.indexOf(
         [
@@ -30,10 +30,10 @@ var getSanitizedFields = function (fields) {
 
 // Function 'warms up' the query so that we can project the field that we're sorting on
 // extract 'contactName' and lower-case it
-var sortWarmUp = function (sort, fields) {
+var sortWarmUp = function(sort, fields) {
   if (sort) {
     var projection = {}
-    _.each(fields, function (f) {
+    _.each(fields, function(f) {
       projection[f] = 1
     })
     return sort.contactName
@@ -48,11 +48,11 @@ var sortWarmUp = function (sort, fields) {
   return null
 }
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function(args, res, rest) {
   res.status(200).send()
 }
 
-exports.publicGet = function (args, res, next) {
+exports.publicGet = function(args, res, next) {
   var query = {},
     sort = {}
   var skip = null,
@@ -70,7 +70,7 @@ exports.publicGet = function (args, res, next) {
     }
 
     if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
-      args.swagger.params.sortBy.value.forEach(function (value) {
+      args.swagger.params.sortBy.value.forEach(function(value) {
         var order_by = value.charAt(0) == '-' ? -1 : 1
         var sort_by = value.slice(1)
         // only accept certain fields
@@ -105,12 +105,16 @@ exports.publicGet = function (args, res, next) {
     limit, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
+    })
+    .catch(function(err) {
+      defaultLog.error('comment publicGet:', err)
+      return Actions.sendResponse(res, 500, err)
     })
 }
 
-exports.protectedHead = function (args, res, next) {
+exports.protectedHead = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -142,7 +146,7 @@ exports.protectedHead = function (args, res, next) {
     null, // limit
     true,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       // /api/comment/ route, return 200 OK with 0 items if necessary
       if (
         !(args.swagger.params.CommentId && args.swagger.params.CommentId.value) ||
@@ -154,9 +158,13 @@ exports.protectedHead = function (args, res, next) {
         return Actions.sendResponse(res, 404, data)
       }
     })
+    .catch(function(err) {
+      defaultLog.error('comment protectedHead:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
-exports.protectedGet = function (args, res, next) {
+exports.protectedGet = function(args, res, next) {
   var query = {},
     sort = {}
   var skip = null,
@@ -178,7 +186,7 @@ exports.protectedGet = function (args, res, next) {
     }
 
     if (args.swagger.params.sortBy && args.swagger.params.sortBy.value) {
-      args.swagger.params.sortBy.value.forEach(function (value) {
+      args.swagger.params.sortBy.value.forEach(function(value) {
         var order_by = value.charAt(0) == '-' ? -1 : 1
         var sort_by = value.slice(1)
         // only accept certain fields
@@ -213,13 +221,17 @@ exports.protectedGet = function (args, res, next) {
     limit, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
+    })
+    .catch(function(err) {
+      defaultLog.error('comment protectedGet:', err)
+      return Actions.sendResponse(res, 500, err)
     })
 }
 
 //  Create a new Comment
-exports.unProtectedPost = function (args, res, next) {
+exports.unProtectedPost = function(args, res, next) {
   var obj = args.swagger.params.comment.value
   defaultLog.info('Incoming new object:', obj)
 
@@ -247,14 +259,20 @@ exports.unProtectedPost = function (args, res, next) {
   // Not needed until we tie user profiles in.
   // comment._addedBy = args.swagger.params.auth_payload.preferred_username;
 
-  comment.save().then(function (c) {
-    // defaultLog.info("Saved new Comment object:", c);
-    return Actions.sendResponse(res, 200, c)
-  })
+  comment
+    .save()
+    .then(function(c) {
+      // defaultLog.info("Saved new Comment object:", c);
+      return Actions.sendResponse(res, 200, c)
+    })
+    .catch(function(err) {
+      defaultLog.error('comment unProtectedPost:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Update an existing Comment
-exports.protectedPut = function (args, res, next) {
+exports.protectedPut = function(args, res, next) {
   var objId = args.swagger.params.CommentId.value
   defaultLog.info('ObjectID:', args.swagger.params.CommentId.value)
 
@@ -293,69 +311,84 @@ exports.protectedPut = function (args, res, next) {
   // TODO sanitize/update audits.
 
   var Comment = require('mongoose').model('Comment')
-  Comment.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
-      return Actions.sendResponse(res, 200, o)
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+  Comment.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
+        return Actions.sendResponse(res, 200, o)
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('comment protectedPut:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Publish the Comment
-exports.protectedPublish = function (args, res, next) {
+exports.protectedPublish = function(args, res, next) {
   var objId = args.swagger.params.CommentId.value
   defaultLog.info('Publish Comment:', objId)
 
   var Comment = require('mongoose').model('Comment')
-  Comment.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Comment.findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Add public to the tag of this obj.
-      Actions.publish(o).then(
-        function (published) {
-          // Published successfully
-          return Actions.sendResponse(res, 200, published)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Add public to the tag of this obj.
+        Actions.publish(o).then(
+          function(published) {
+            // Published successfully
+            return Actions.sendResponse(res, 200, published)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('comment protectedPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Unpublish the Comment
-exports.protectedUnPublish = function (args, res, next) {
+exports.protectedUnPublish = function(args, res, next) {
   var objId = args.swagger.params.CommentId.value
   defaultLog.info('UnPublish Comment:', objId)
 
   var Comment = require('mongoose').model('Comment')
-  Comment.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Comment.findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Remove public to the tag of this obj.
-      Actions.unPublish(o).then(
-        function (unpublished) {
-          // UnPublished successfully
-          return Actions.sendResponse(res, 200, unpublished)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Remove public to the tag of this obj.
+        Actions.unPublish(o).then(
+          function(unpublished) {
+            // UnPublished successfully
+            return Actions.sendResponse(res, 200, unpublished)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('comment protectedUnPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }

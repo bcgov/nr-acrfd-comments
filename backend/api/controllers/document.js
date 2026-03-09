@@ -11,8 +11,8 @@ var fs = require('fs')
 var uploadDir = process.env.UPLOAD_DIRECTORY || './uploads/'
 var ENABLE_VIRUS_SCANNING = process.env.ENABLE_VIRUS_SCANNING || false
 
-var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
+var getSanitizedFields = function(fields) {
+  return _.remove(fields, function(f) {
     return (
       _.indexOf(
         ['displayName', 'internalURL', 'passedAVCheck', 'documentFileName', 'internalMime'],
@@ -22,11 +22,11 @@ var getSanitizedFields = function (fields) {
   })
 }
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function(args, res, rest) {
   res.status(200).send()
 }
 
-exports.publicGet = function (args, res, next) {
+exports.publicGet = function(args, res, next) {
   // Build match query if on docId route
   var query = {}
   if (args.swagger.params.docId) {
@@ -54,11 +54,15 @@ exports.publicGet = function (args, res, next) {
     null, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
     })
+    .catch(function(err) {
+      defaultLog.error('document publicGet:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
-exports.unProtectedPost = function (args, res, next) {
+exports.unProtectedPost = function(args, res, next) {
   defaultLog.info('Creating new object')
   var _application = args.swagger.params._application.value
   var _comment = args.swagger.params._comment.value
@@ -70,14 +74,14 @@ exports.unProtectedPost = function (args, res, next) {
   var ext = mime.extension(args.swagger.params.upfile.value.mimetype)
   try {
     Promise.resolve()
-      .then(function () {
+      .then(function() {
         if (ENABLE_VIRUS_SCANNING == 'true') {
           return Utils.avScan(args.swagger.params.upfile.value.buffer)
         } else {
           return true
         }
       })
-      .then(function (valid) {
+      .then(function(valid) {
         if (!valid) {
           defaultLog.warn('File failed virus check.')
           return Actions.sendResponse(res, 400, { message: 'File failed virus check.' })
@@ -97,7 +101,7 @@ exports.unProtectedPost = function (args, res, next) {
           doc.passedAVCheck = true
           // Update who did this?  TODO: Public
           // doc._addedBy = args.swagger.params.auth_payload.preferred_username;
-          doc.save().then(function (d) {
+          doc.save().then(function(d) {
             defaultLog.info('Saved new document object:', d._id)
             return Actions.sendResponse(res, 200, d)
           })
@@ -111,7 +115,7 @@ exports.unProtectedPost = function (args, res, next) {
   }
 }
 
-exports.protectedHead = function (args, res, next) {
+exports.protectedHead = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -149,7 +153,7 @@ exports.protectedHead = function (args, res, next) {
     null, // limit
     true,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       // /api/commentperiod/ route, return 200 OK with 0 items if necessary
       if (
         !(args.swagger.params.docId && args.swagger.params.docId.value) ||
@@ -161,9 +165,13 @@ exports.protectedHead = function (args, res, next) {
         return Actions.sendResponse(res, 404, data)
       }
     })
+    .catch(function(err) {
+      defaultLog.error('document protectedHead:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
-exports.protectedGet = function (args, res, next) {
+exports.protectedGet = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -201,11 +209,15 @@ exports.protectedGet = function (args, res, next) {
     null, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
     })
+    .catch(function(err) {
+      defaultLog.error('document protectedGet:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
-exports.publicDownload = function (args, res, next) {
+exports.publicDownload = function(args, res, next) {
   // Build match query if on docId route
   var query = {}
   if (args.swagger.params.docId) {
@@ -225,7 +237,7 @@ exports.publicDownload = function (args, res, next) {
     null, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       if (data && data.length === 1) {
         var blob = data[0]
         if (fs.existsSync(blob.internalURL)) {
@@ -240,9 +252,13 @@ exports.publicDownload = function (args, res, next) {
         return Actions.sendResponse(res, 404, {})
       }
     })
+    .catch(function(err) {
+      defaultLog.error('document publicDownload:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
-exports.protectedDownload = function (args, res, next) {
+exports.protectedDownload = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -265,7 +281,7 @@ exports.protectedDownload = function (args, res, next) {
     null, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       if (data && data.length === 1) {
         var blob = data[0]
         if (fs.existsSync(blob.internalURL)) {
@@ -280,10 +296,14 @@ exports.protectedDownload = function (args, res, next) {
         return Actions.sendResponse(res, 404, {})
       }
     })
+    .catch(function(err) {
+      defaultLog.error('document protectedDownload:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 //  Create a new document
-exports.protectedPost = function (args, res, next) {
+exports.protectedPost = function(args, res, next) {
   defaultLog.info('Creating new object')
   var _application = args.swagger.params._application.value
   var _comment = args.swagger.params._comment.value
@@ -295,14 +315,14 @@ exports.protectedPost = function (args, res, next) {
   var ext = mime.extension(args.swagger.params.upfile.value.mimetype)
   try {
     Promise.resolve()
-      .then(function () {
+      .then(function() {
         if (ENABLE_VIRUS_SCANNING == 'true') {
           return Utils.avScan(args.swagger.params.upfile.value.buffer)
         } else {
           return true
         }
       })
-      .then(function (valid) {
+      .then(function(valid) {
         if (!valid) {
           defaultLog.warn('File failed virus check.')
           return Actions.sendResponse(res, 400, { message: 'File failed virus check.' })
@@ -323,7 +343,7 @@ exports.protectedPost = function (args, res, next) {
           doc.passedAVCheck = true
           // Update who did this?
           doc._addedBy = args.swagger.params.auth_payload.preferred_username
-          doc.save().then(function (d) {
+          doc.save().then(function(d) {
             defaultLog.info('Saved new document object:', d._id)
             return Actions.sendResponse(res, 200, d)
           })
@@ -337,88 +357,103 @@ exports.protectedPost = function (args, res, next) {
   }
 }
 
-exports.protectedDelete = function (args, res, next) {
+exports.protectedDelete = function(args, res, next) {
   var objId = args.swagger.params.docId.value
   defaultLog.info('Delete Document:', objId)
 
   var Document = require('mongoose').model('Document')
-  Document.findOne({ _id: objId, isDeleted: false }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Document.findOne({ _id: objId, isDeleted: false })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Set the deleted flag.
-      Actions.delete(o).then(
-        function (deleted) {
-          // Deleted successfully
-          return Actions.sendResponse(res, 200, deleted)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, 400, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Set the deleted flag.
+        Actions.delete(o).then(
+          function(deleted) {
+            // Deleted successfully
+            return Actions.sendResponse(res, 200, deleted)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 400, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('document protectedDelete:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
-exports.protectedPublish = function (args, res, next) {
+exports.protectedPublish = function(args, res, next) {
   var objId = args.swagger.params.docId.value
   defaultLog.info('Publish Document:', objId)
 
   var Document = require('mongoose').model('Document')
-  Document.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Document.findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Add public to the tag of this obj.
-      Actions.publish(o).then(
-        function (published) {
-          // Published successfully
-          return Actions.sendResponse(res, 200, published)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Add public to the tag of this obj.
+        Actions.publish(o).then(
+          function(published) {
+            // Published successfully
+            return Actions.sendResponse(res, 200, published)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('document protectedPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
-exports.protectedUnPublish = function (args, res, next) {
+exports.protectedUnPublish = function(args, res, next) {
   var objId = args.swagger.params.docId.value
   defaultLog.info('UnPublish Document:', objId)
 
   var Document = require('mongoose').model('Document')
-  Document.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Document.findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Remove public to the tag of this obj.
-      Actions.unPublish(o).then(
-        function (unpublished) {
-          // UnPublished successfully
-          return Actions.sendResponse(res, 200, unpublished)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Remove public to the tag of this obj.
+        Actions.unPublish(o).then(
+          function(unpublished) {
+            // UnPublished successfully
+            return Actions.sendResponse(res, 200, unpublished)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('document protectedUnPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Update an existing document
-exports.protectedPut = function (args, res, next) {
+exports.protectedPut = function(args, res, next) {
   // defaultLog.info("upfile:", args.swagger.params.upfile);
   var objId = args.swagger.params.docId.value
   var _application = args.swagger.params._application.value
@@ -431,14 +466,14 @@ exports.protectedPut = function (args, res, next) {
   var ext = mime.extension(args.swagger.params.upfile.value.mimetype)
   try {
     Promise.resolve()
-      .then(function () {
+      .then(function() {
         if (ENABLE_VIRUS_SCANNING == 'true') {
           return Utils.avScan(args.swagger.params.upfile.value.buffer)
         } else {
           return true
         }
       })
-      .then(function (valid) {
+      .then(function(valid) {
         if (!valid) {
           defaultLog.warn('File failed virus check.')
           return Actions.sendResponse(res, 400, { message: 'File failed virus check.' })
@@ -459,7 +494,7 @@ exports.protectedPut = function (args, res, next) {
           obj.passedAVCheck = true
           var Document = require('mongoose').model('Document')
           Document.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(
-            function (o) {
+            function(o) {
               if (o) {
                 // defaultLog.info("o:", o);
                 return Actions.sendResponse(res, 200, o)

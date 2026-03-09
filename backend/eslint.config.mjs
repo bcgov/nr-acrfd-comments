@@ -1,5 +1,5 @@
-import eslint from '@eslint/js';
-import globals from 'globals';
+import eslint from '@eslint/js'
+import globals from 'globals'
 
 export default [
   // Global ignores (migrated from .eslintignore)
@@ -36,5 +36,4 @@ export default [
       'no-constant-binary-expression': 'warn',
     },
   },
-];
-
+]

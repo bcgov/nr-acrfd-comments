@@ -5,11 +5,11 @@ var mongoose = require('mongoose')
 var Actions = require('../helpers/actions')
 var Utils = require('../helpers/utils')
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function(args, res, rest) {
   res.status(200).send()
 }
 
-exports.protectedGet = function (args, res, next) {
+exports.protectedGet = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -21,17 +21,18 @@ exports.protectedGet = function (args, res, next) {
     query = Utils.buildQuery('_id', args.swagger.params.userId.value, query)
   }
 
-  getUsers(
-    args.swagger.operation['x-security-scopes'],
-    query,
-    args.swagger.params.fields.value,
-  ).then(function (data) {
-    return Actions.sendResponse(res, 200, data)
-  })
+  getUsers(args.swagger.operation['x-security-scopes'], query, args.swagger.params.fields.value)
+    .then(function(data) {
+      return Actions.sendResponse(res, 200, data)
+    })
+    .catch(function(err) {
+      defaultLog.error('user protectedGet:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 //  Create a new user
-exports.protectedPost = function (args, res, next) {
+exports.protectedPost = function(args, res, next) {
   var obj = args.swagger.params.user.value
   defaultLog.info('Incoming new object:', obj)
 
@@ -43,14 +44,20 @@ exports.protectedPost = function (args, res, next) {
 
   // Define security tag defaults - users not public by default.
   user.tags = [['sysadmin']]
-  user.save().then(function (a) {
-    defaultLog.info('Saved new user object:', a)
-    return Actions.sendResponse(res, 200, a)
-  })
+  user
+    .save()
+    .then(function(a) {
+      defaultLog.info('Saved new user object:', a)
+      return Actions.sendResponse(res, 200, a)
+    })
+    .catch(function(err) {
+      defaultLog.error('user protectedPost:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Update an existing user
-exports.protectedPut = function (args, res, next) {
+exports.protectedPut = function(args, res, next) {
   var objId = args.swagger.params.userId.value
   defaultLog.info('ObjectID:', args.swagger.params.userId.value)
 
@@ -94,33 +101,38 @@ exports.protectedPut = function (args, res, next) {
   }
 
   var User = require('mongoose').model('User')
-  User.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
-      return Actions.sendResponse(res, 200, o)
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+  User.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
+        return Actions.sendResponse(res, 200, o)
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('user protectedPut:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
-var getUsers = function (role, query, fields) {
-  return new Promise(function (resolve, reject) {
+var getUsers = function(role, query, fields) {
+  return new Promise(function(resolve, reject) {
     var User = mongoose.model('User')
     var projection = {}
 
     // Fields we always return //
     var defaultFields = ['_id', 'displayName', 'roles', 'tags']
-    _.each(defaultFields, function (f) {
+    _.each(defaultFields, function(f) {
       projection[f] = 1
     })
 
     // Add requested fields - sanitize first by including only those that we can/want to return
-    var sanitizedFields = _.remove(fields, function (f) {
+    var sanitizedFields = _.remove(fields, function(f) {
       return _.indexOf(['displayName', 'firstName', 'lastName', 'username', 'roles'], f) !== -1
     })
-    _.each(sanitizedFields, function (f) {
+    _.each(sanitizedFields, function(f) {
       projection[f] = 1
     })
 
@@ -134,7 +146,7 @@ var getUsers = function (role, query, fields) {
       },
     ])
       .exec()
-      .then(function (data) {
+      .then(function(data) {
         defaultLog.info('data:', data)
         resolve(data)
       })

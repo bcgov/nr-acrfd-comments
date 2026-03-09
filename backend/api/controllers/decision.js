@@ -4,17 +4,17 @@ var mongoose = require('mongoose')
 var Actions = require('../helpers/actions')
 var Utils = require('../helpers/utils')
 
-var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
+var getSanitizedFields = function(fields) {
+  return _.remove(fields, function(f) {
     return _.indexOf(['name', '_addedBy', '_application', 'decisionDate'], f) !== -1
   })
 }
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function(args, res, rest) {
   res.status(200).send()
 }
 
-exports.publicGet = function (args, res, next) {
+exports.publicGet = function(args, res, next) {
   // Build match query if on decisionId route
   var query = {}
   if (args.swagger.params.decisionId) {
@@ -36,12 +36,16 @@ exports.publicGet = function (args, res, next) {
     null, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
+    })
+    .catch(function(err) {
+      defaultLog.error('decision publicGet:', err)
+      return Actions.sendResponse(res, 500, err)
     })
 }
 
-exports.protectedHead = function (args, res, next) {
+exports.protectedHead = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -73,7 +77,7 @@ exports.protectedHead = function (args, res, next) {
     null, // limit
     true,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       // /api/commentperiod/ route, return 200 OK with 0 items if necessary
       if (
         !(args.swagger.params.decisionId && args.swagger.params.decisionId.value) ||
@@ -85,9 +89,13 @@ exports.protectedHead = function (args, res, next) {
         return Actions.sendResponse(res, 404, data)
       }
     })
+    .catch(function(err) {
+      defaultLog.error('decision protectedHead:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
-exports.protectedGet = function (args, res, next) {
+exports.protectedGet = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -119,13 +127,17 @@ exports.protectedGet = function (args, res, next) {
     null, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
+    })
+    .catch(function(err) {
+      defaultLog.error('decision protectedGet:', err)
+      return Actions.sendResponse(res, 500, err)
     })
 }
 
 //  Create a new decision
-exports.protectedPost = function (args, res, next) {
+exports.protectedPost = function(args, res, next) {
   var obj = args.swagger.params.decision.value
   defaultLog.info('Incoming new object:', obj)
 
@@ -133,14 +145,20 @@ exports.protectedPost = function (args, res, next) {
   var decision = new Decision(obj)
   // Define security tag defaults
   decision.tags = [['sysadmin']]
-  decision.save().then(function (a) {
-    defaultLog.info('Saved new decision object:', a)
-    return Actions.sendResponse(res, 200, a)
-  })
+  decision
+    .save()
+    .then(function(a) {
+      defaultLog.info('Saved new decision object:', a)
+      return Actions.sendResponse(res, 200, a)
+    })
+    .catch(function(err) {
+      defaultLog.error('decision protectedPost:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Update an existing decision
-exports.protectedPut = function (args, res, next) {
+exports.protectedPut = function(args, res, next) {
   var objId = args.swagger.params.decisionId.value
   defaultLog.info('ObjectID:', args.swagger.params.decisionId.value)
 
@@ -150,94 +168,117 @@ exports.protectedPut = function (args, res, next) {
   defaultLog.info('Incoming updated object:', obj)
 
   var Decision = require('mongoose').model('Decision')
-  Decision.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
-      return Actions.sendResponse(res, 200, o)
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+  Decision.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
+        return Actions.sendResponse(res, 200, o)
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('decision protectedPut:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 //  Delete a Decision
-exports.protectedDelete = function (args, res, next) {
+exports.protectedDelete = function(args, res, next) {
   var objId = args.swagger.params.decisionId.value
   defaultLog.info('Delete Decision:', objId)
 
   var decision = require('mongoose').model('Decision')
-  decision.findOne({ _id: objId, isDeleted: false }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  decision
+    .findOne({ _id: objId, isDeleted: false })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Set the deleted flag.
-      Actions.delete(o).then(
-        function (deleted) {
-          // Deleted successfully
-          return Actions.sendResponse(res, 200, deleted)
-        },
-        function (err) {
-          // Error
-          defaultLog.info("Couldn't Execute!")
-          return Actions.sendResponse(res, 400, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Set the deleted flag.
+        Actions.delete(o).then(
+          function(deleted) {
+            // Deleted successfully
+            return Actions.sendResponse(res, 200, deleted)
+          },
+          function(err) {
+            // Error
+            defaultLog.info("Couldn't Execute!")
+            return Actions.sendResponse(res, 400, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('decision protectedDelete:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 // Publish/Unpublish the Decision
-exports.protectedPublish = function (args, res, next) {
+exports.protectedPublish = function(args, res, next) {
   var objId = args.swagger.params.decisionId.value
   defaultLog.info('Publish Decision:', objId)
 
   var decision = require('mongoose').model('Decision')
-  decision.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  decision
+    .findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Add public to the tag of this obj.
-      Actions.publish(o).then(
-        function (published) {
-          // Published successfully
-          return Actions.sendResponse(res, 200, published)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Add public to the tag of this obj.
+        Actions.publish(o).then(
+          function(published) {
+            // Published successfully
+            return Actions.sendResponse(res, 200, published)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('decision protectedPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
-exports.protectedUnPublish = function (args, res, next) {
+exports.protectedUnPublish = function(args, res, next) {
   var objId = args.swagger.params.decisionId.value
   defaultLog.info('UnPublish Decision:', objId)
 
   var decision = require('mongoose').model('Decision')
-  decision.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  decision
+    .findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Remove public to the tag of this obj.
-      Actions.unPublish(o).then(
-        function (unpublished) {
-          // UnPublished successfully
-          return Actions.sendResponse(res, 200, unpublished)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Remove public to the tag of this obj.
+        Actions.unPublish(o).then(
+          function(unpublished) {
+            // UnPublished successfully
+            return Actions.sendResponse(res, 200, unpublished)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('decision protectedUnPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }

@@ -4,19 +4,19 @@ var mongoose = require('mongoose')
 var Actions = require('../helpers/actions')
 var Utils = require('../helpers/utils')
 
-var getSanitizedFields = function (fields) {
-  return _.remove(fields, function (f) {
+var getSanitizedFields = function(fields) {
+  return _.remove(fields, function(f) {
     return (
       _.indexOf(['name', 'startDate', 'endDate', '_addedBy', '_application', 'isDeleted'], f) !== -1
     )
   })
 }
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function(args, res, rest) {
   res.status(200).send()
 }
 
-exports.publicGet = function (args, res, next) {
+exports.publicGet = function(args, res, next) {
   // Build match query if on CommentPeriodId route
   var query = {}
   if (args.swagger.params.CommentPeriodId) {
@@ -38,12 +38,16 @@ exports.publicGet = function (args, res, next) {
     null, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
+    })
+    .catch(function(err) {
+      defaultLog.error('commentperiod publicGet:', err)
+      return Actions.sendResponse(res, 500, err)
     })
 }
 
-exports.protectedHead = function (args, res, next) {
+exports.protectedHead = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -75,7 +79,7 @@ exports.protectedHead = function (args, res, next) {
     null, // limit
     true,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       // /api/commentperiod/ route, return 200 OK with 0 items if necessary
       if (
         !(args.swagger.params.CommentPeriodId && args.swagger.params.CommentPeriodId.value) ||
@@ -87,9 +91,13 @@ exports.protectedHead = function (args, res, next) {
         return Actions.sendResponse(res, 404, data)
       }
     })
+    .catch(function(err) {
+      defaultLog.error('commentperiod protectedHead:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
-exports.protectedGet = function (args, res, next) {
+exports.protectedGet = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -121,13 +129,17 @@ exports.protectedGet = function (args, res, next) {
     null, // limit
     false,
   ) // count
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
+    })
+    .catch(function(err) {
+      defaultLog.error('commentperiod protectedGet:', err)
+      return Actions.sendResponse(res, 500, err)
     })
 }
 
 //  Create a new CommentPeriod
-exports.protectedPost = function (args, res, next) {
+exports.protectedPost = function(args, res, next) {
   var obj = args.swagger.params._commentPeriod.value
   defaultLog.info('Incoming new object:', obj)
   defaultLog.info('args.swagger.params.auth_payload:', args.swagger.params.auth_payload)
@@ -139,14 +151,20 @@ exports.protectedPost = function (args, res, next) {
   // Define security tag defaults
   commentperiod.tags = [['sysadmin']]
   commentperiod._addedBy = args.swagger.params.auth_payload.preferred_username
-  commentperiod.save().then(function (c) {
-    // defaultLog.info("Saved new CommentPeriod object:", c);
-    return Actions.sendResponse(res, 200, c)
-  })
+  commentperiod
+    .save()
+    .then(function(c) {
+      // defaultLog.info("Saved new CommentPeriod object:", c);
+      return Actions.sendResponse(res, 200, c)
+    })
+    .catch(function(err) {
+      defaultLog.error('commentperiod protectedPost:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Update an existing CommentPeriod
-exports.protectedPut = function (args, res, next) {
+exports.protectedPut = function(args, res, next) {
   var objId = args.swagger.params.CommentPeriodId.value
   defaultLog.info('ObjectID:', args.swagger.params.CommentPeriodId.value)
   var obj = args.swagger.params.cp.value
@@ -162,7 +180,7 @@ exports.protectedPut = function (args, res, next) {
   var commentperiod = require('mongoose').model('CommentPeriod')
   commentperiod
     .findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true })
-    .then(function (o) {
+    .then(function(o) {
       if (o) {
         defaultLog.debug('o:', JSON.stringify(o))
         return Actions.sendResponse(res, 200, o)
@@ -171,87 +189,109 @@ exports.protectedPut = function (args, res, next) {
         return Actions.sendResponse(res, 404, {})
       }
     })
+    .catch(function(err) {
+      defaultLog.error('commentperiod protectedPut:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 //  Delete a new CommentPeriod
-exports.protectedDelete = function (args, res, next) {
+exports.protectedDelete = function(args, res, next) {
   var objId = args.swagger.params.CommentPeriodId.value
   defaultLog.info('Delete CommentPeriod:', objId)
 
   var commentperiod = require('mongoose').model('CommentPeriod')
-  commentperiod.findOne({ _id: objId, isDeleted: false }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  commentperiod
+    .findOne({ _id: objId, isDeleted: false })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Set the deleted flag.
-      Actions.delete(o).then(
-        function (deleted) {
-          // Deleted successfully
-          return Actions.sendResponse(res, 200, deleted)
-        },
-        function (err) {
-          // Error
-          defaultLog.info("Couldn't Execute!")
-          return Actions.sendResponse(res, 400, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Set the deleted flag.
+        Actions.delete(o).then(
+          function(deleted) {
+            // Deleted successfully
+            return Actions.sendResponse(res, 200, deleted)
+          },
+          function(err) {
+            // Error
+            defaultLog.info("Couldn't Execute!")
+            return Actions.sendResponse(res, 400, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('commentperiod protectedDelete:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Publish/Unpublish the CommentPeriod
-exports.protectedPublish = function (args, res, next) {
+exports.protectedPublish = function(args, res, next) {
   var objId = args.swagger.params.CommentPeriodId.value
   defaultLog.info('Publish CommentPeriod:', objId)
 
   var commentperiod = require('mongoose').model('CommentPeriod')
-  commentperiod.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  commentperiod
+    .findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Add public to the tag of this obj.
-      Actions.publish(o).then(
-        function (published) {
-          // Published successfully
-          return Actions.sendResponse(res, 200, published)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Add public to the tag of this obj.
+        Actions.publish(o).then(
+          function(published) {
+            // Published successfully
+            return Actions.sendResponse(res, 200, published)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('commentperiod protectedPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
-exports.protectedUnPublish = function (args, res, next) {
+exports.protectedUnPublish = function(args, res, next) {
   var objId = args.swagger.params.CommentPeriodId.value
   defaultLog.info('UnPublish CommentPeriod:', objId)
 
   var commentperiod = require('mongoose').model('CommentPeriod')
-  commentperiod.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  commentperiod
+    .findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Remove public to the tag of this obj.
-      Actions.unPublish(o).then(
-        function (unpublished) {
-          // UnPublished successfully
-          return Actions.sendResponse(res, 200, unpublished)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Remove public to the tag of this obj.
+        Actions.unPublish(o).then(
+          function(unpublished) {
+            // UnPublished successfully
+            return Actions.sendResponse(res, 200, unpublished)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('commentperiod protectedUnPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }

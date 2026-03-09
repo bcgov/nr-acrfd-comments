@@ -4,11 +4,11 @@ var mongoose = require('mongoose')
 var Actions = require('../helpers/actions')
 var Utils = require('../helpers/utils')
 
-exports.protectedOptions = function (args, res, rest) {
+exports.protectedOptions = function(args, res, rest) {
   res.status(200).send()
 }
 
-exports.publicGet = function (args, res, next) {
+exports.publicGet = function(args, res, next) {
   var query = {}
   // Build match query if on featureId route
   if (args.swagger.params.featureId) {
@@ -45,11 +45,16 @@ exports.publicGet = function (args, res, next) {
   }
   _.assignIn(query, { isDeleted: false })
 
-  getFeatures(['public'], query, args.swagger.params.fields.value).then(function (data) {
-    return Actions.sendResponse(res, 200, data)
-  })
+  getFeatures(['public'], query, args.swagger.params.fields.value)
+    .then(function(data) {
+      return Actions.sendResponse(res, 200, data)
+    })
+    .catch(function(err) {
+      defaultLog.error('feature publicGet:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
-exports.protectedGet = function (args, res, next) {
+exports.protectedGet = function(args, res, next) {
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
     JSON.stringify(args.swagger.operation['x-security-scopes']),
@@ -96,16 +101,17 @@ exports.protectedGet = function (args, res, next) {
     _.assignIn(query, { isDeleted: false })
   }
 
-  getFeatures(
-    args.swagger.operation['x-security-scopes'],
-    query,
-    args.swagger.params.fields.value,
-  ).then(function (data) {
-    return Actions.sendResponse(res, 200, data)
-  })
+  getFeatures(args.swagger.operation['x-security-scopes'], query, args.swagger.params.fields.value)
+    .then(function(data) {
+      return Actions.sendResponse(res, 200, data)
+    })
+    .catch(function(err) {
+      defaultLog.error('feature protectedGet:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
-exports.protectedDelete = function (args, res, next) {
+exports.protectedDelete = function(args, res, next) {
   defaultLog.info('Deleting a Feature(s)')
   defaultLog.info(
     'args.swagger.operation.x-security-scopes:',
@@ -133,16 +139,16 @@ exports.protectedDelete = function (args, res, next) {
 
   // Straight delete, don't isDelete=true them.
   Feature.deleteMany(query)
-    .then(function (data) {
+    .then(function(data) {
       return Actions.sendResponse(res, 200, data)
     })
-    .catch(function (err) {
+    .catch(function(err) {
       return Actions.sendResponse(res, 400, err)
     })
 }
 
 //  Create a new Feature
-exports.protectedPost = function (args, res, next) {
+exports.protectedPost = function(args, res, next) {
   var obj = args.swagger.params.feature.value
   defaultLog.info('Incoming new object:', obj)
 
@@ -150,14 +156,20 @@ exports.protectedPost = function (args, res, next) {
   var feature = new Feature(obj)
   // Define security tag defaults.  Default public and sysadmin.
   feature.tags = [['sysadmin'], ['public']]
-  feature.save().then(function (a) {
-    // defaultLog.info("Saved new Feature object:", a);
-    return Actions.sendResponse(res, 200, a)
-  })
+  feature
+    .save()
+    .then(function(a) {
+      // defaultLog.info("Saved new Feature object:", a);
+      return Actions.sendResponse(res, 200, a)
+    })
+    .catch(function(err) {
+      defaultLog.error('feature protectedPost:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Update an existing Feature
-exports.protectedPut = function (args, res, next) {
+exports.protectedPut = function(args, res, next) {
   var objId = args.swagger.params.featureId.value
   defaultLog.info('ObjectID:', args.swagger.params.featureId.value)
 
@@ -168,89 +180,104 @@ exports.protectedPut = function (args, res, next) {
   // TODO sanitize/update audits.
 
   var Feature = require('mongoose').model('Feature')
-  Feature.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
-      return Actions.sendResponse(res, 200, o)
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+  Feature.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
+        return Actions.sendResponse(res, 200, o)
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('feature protectedPut:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Publish/Unpublish the Feature
-exports.protectedPublish = function (args, res, next) {
+exports.protectedPublish = function(args, res, next) {
   var objId = args.swagger.params.featureId.value
   defaultLog.info('Publish Feature:', objId)
 
   var Feature = require('mongoose').model('Feature')
-  Feature.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Feature.findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Add public to the tag of this obj.
-      Actions.publish(o).then(
-        function (published) {
-          // Published successfully
-          return Actions.sendResponse(res, 200, published)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Add public to the tag of this obj.
+        Actions.publish(o).then(
+          function(published) {
+            // Published successfully
+            return Actions.sendResponse(res, 200, published)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('feature protectedPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
-exports.protectedUnPublish = function (args, res, next) {
+exports.protectedUnPublish = function(args, res, next) {
   var objId = args.swagger.params.featureId.value
   defaultLog.info('UnPublish Feature:', objId)
 
   var Feature = require('mongoose').model('Feature')
-  Feature.findOne({ _id: objId }).then(function (o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Feature.findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Remove public to the tag of this obj.
-      Actions.unPublish(o).then(
-        function (unpublished) {
-          // UnPublished successfully
-          return Actions.sendResponse(res, 200, unpublished)
-        },
-        function (err) {
-          // Error
-          return Actions.sendResponse(res, null, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Remove public to the tag of this obj.
+        Actions.unPublish(o).then(
+          function(unpublished) {
+            // UnPublished successfully
+            return Actions.sendResponse(res, 200, unpublished)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 500, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('feature protectedUnPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
-var getFeatures = function (role, query, fields) {
-  return new Promise(function (resolve, reject) {
+var getFeatures = function(role, query, fields) {
+  return new Promise(function(resolve, reject) {
     var Feature = mongoose.model('Feature')
     var projection = {}
 
     // Fields we always return
     var defaultFields = ['_id', 'type', 'tags']
-    _.each(defaultFields, function (f) {
+    _.each(defaultFields, function(f) {
       projection[f] = 1
     })
 
     // Add requested fields - sanitize first by including only those that we can/want to return
-    var sanitizedFields = _.remove(fields, function (f) {
+    var sanitizedFields = _.remove(fields, function(f) {
       return (
         _.indexOf(['type', 'tags', 'geometry', 'properties', 'isDeleted', 'applicationID'], f) !==
         -1
       )
     })
-    _.each(sanitizedFields, function (f) {
+    _.each(sanitizedFields, function(f) {
       projection[f] = 1
     })
 
@@ -291,9 +318,9 @@ var getFeatures = function (role, query, fields) {
       },
     ])
       .exec()
-      .then(function (data) {
+      .then(function(data) {
         // Strip the tags from any object because this is geoJSON
-        _.each(data, function (d) {
+        _.each(data, function(d) {
           function removeTags(obj) {
             for (const prop in obj) {
               if (prop === 'tags') delete obj[prop]
