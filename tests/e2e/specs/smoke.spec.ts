@@ -72,6 +72,9 @@ test.describe('Public app smoke', () => {
     // clicking the hidden small-device duplicate that also carries gtm-apply-filters
     await page.locator('button.explore-btn-lg-device').click()
 
+    // Brief pause to let the map settle before interacting with the marker
+    await page.waitForTimeout(1_000)
+
     // Wait for at least one map marker to appear after filtering
     const marker = page.locator('img.leaflet-marker-icon').first()
     await expect(marker).toBeVisible({ timeout: 20_000 })
