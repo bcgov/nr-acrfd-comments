@@ -67,7 +67,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: "frontend/public/package-lock.json"
+          cache-dependency-path: "**/package-lock.json"
       - name: Install dependencies
         run: npm ci
         working-directory: frontend/public
@@ -102,7 +102,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: "frontend/admin/package-lock.json"
+          cache-dependency-path: "**/package-lock.json"
       - name: Install dependencies
         run: npm ci
         working-directory: frontend/admin
