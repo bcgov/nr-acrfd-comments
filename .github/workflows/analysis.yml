@@ -62,27 +62,34 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: bcgov/action-test-and-analyse@8f699e3fd3fadd9a6adf6f4b1f2638ef7ecfefb9 # v2.0.0
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "frontend/public/package-lock.json"
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend/public
+      - name: Lint
+        run: npm run lint
+        working-directory: frontend/public
+      - name: Test
+        run: npm run test:cov
+        working-directory: frontend/public
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
         with:
-          commands: |
-            npm ci
-            npm run lint
-            npm run test:cov
-          dir: frontend/public
-          node_version: "22"
-          sonar_args: >
+          args: >
             -Dsonar.exclusions=**/coverage/**,**/node_modules/**,**/*spec.ts
             -Dsonar.organization=bcgov-sonarcloud
             -Dsonar.projectKey=quickstart-openshift_frontend_public
-            -Dsonar.sources=src
+            -Dsonar.sources=frontend/public/src
             -Dsonar.test.inclusions=**/*spec.ts
-            -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info
-          sonar_token: ${{ env.SONAR_TOKEN }}
-          dep_scan: warning
-          supply_scan: true
-          triggers: ('frontend/public/')
+            -Dsonar.javascript.lcov.reportPaths=frontend/public/coverage/lcov.info
 
   frontend-admin-tests:
     name: Frontend Admin Tests
@@ -90,27 +97,34 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: bcgov/action-test-and-analyse@8f699e3fd3fadd9a6adf6f4b1f2638ef7ecfefb9 # v2.0.0
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "frontend/admin/package-lock.json"
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend/admin
+      - name: Lint
+        run: npm run lint
+        working-directory: frontend/admin
+      - name: Test
+        run: npm run test:cov
+        working-directory: frontend/admin
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
         with:
-          commands: |
-            npm ci
-            npm run lint
-            npm run test:cov
-          dir: frontend/admin
-          node_version: "22"
-          sonar_args: >
+          args: >
             -Dsonar.exclusions=**/coverage/**,**/node_modules/**,**/*spec.ts
             -Dsonar.organization=bcgov-sonarcloud
             -Dsonar.projectKey=quickstart-openshift_frontend_admin
-            -Dsonar.sources=src
+            -Dsonar.sources=frontend/admin/src
             -Dsonar.test.inclusions=**/*spec.ts
-            -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info
-          sonar_token: ${{ env.SONAR_TOKEN }}
-          dep_scan: warning
-          supply_scan: true
-          triggers: ('frontend/admin/')
+            -Dsonar.javascript.lcov.reportPaths=frontend/admin/coverage/lcov.info
 
   # https://github.com/marketplace/actions/aqua-security-trivy
   trivy:
