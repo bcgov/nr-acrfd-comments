@@ -22,6 +22,10 @@
         <button class="btn btn-light" (click)="exportToHtmlZip()" [disabled]="comments.length === 0">
           Export to HTML + ZIP
         </button>
+        <!-- Print to PDF -->
+        <button class="btn btn-light" (click)="exportToPdf()" [disabled]="comments.length === 0">
+          Export to PDF
+        </button>
       </div>
     </div>
   </div>
