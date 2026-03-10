@@ -14,6 +14,14 @@
         <button class="btn btn-light" (click)="exportToExcel()" [disabled]="comments.length === 0">
           Export to Excel
         </button>
+        <!-- xlsx + ZIP -->
+        <button class="btn btn-light" (click)="exportToZip()" [disabled]="comments.length === 0">
+          Export to ZIP (with documents)
+        </button>
+        <!-- HTML + ZIP -->
+        <button class="btn btn-light" (click)="exportToHtmlZip()" [disabled]="comments.length === 0">
+          Export to HTML + ZIP
+        </button>
       </div>
     </div>
   </div>

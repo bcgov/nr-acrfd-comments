@@ -681,6 +681,10 @@ export class ApiService {
       .toPromise()
   }
 
+  public getDocumentBlob(documentId: string): Promise<Blob> {
+    return this.downloadResource(documentId)
+  }
+
   public async downloadDocument(document: Document): Promise<void> {
     const blob = await this.downloadResource(document._id)
     const filename = document.documentFileName
