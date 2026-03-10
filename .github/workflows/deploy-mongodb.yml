@@ -5,14 +5,14 @@ on:
     branches:
       - main
     paths:
-      - "helm/mongodb/**"
-      - ".github/workflows/deploy-mongodb.yml"
+      - 'helm/mongodb/**'
+      - '.github/workflows/deploy-mongodb.yml'
   workflow_dispatch:
     inputs:
       environment:
-        description: "Environment to deploy to"
+        description: 'Environment to deploy to'
         required: true
-        default: "dev"
+        default: 'dev'
         type: choice
         options:
           - dev
@@ -36,7 +36,7 @@ jobs:
       - name: Set up Helm
         uses: azure/setup-helm@v3
         with:
-          version: "latest"
+          version: 'latest'
 
       - name: Log in to OpenShift
         uses: redhat-actions/oc-login@v1
@@ -101,7 +101,7 @@ jobs:
 
           # Test connection to MongoDB
           kubectl exec mongodb-0 -n $NAMESPACE -- \
-            mongo 127.0.0.1:27017 --eval "db.adminCommand('ping')" || true
+            mongosh 127.0.0.1:27017 --eval "db.adminCommand('ping')" || true
 
           echo "MongoDB is ready for connections"
 
@@ -111,9 +111,9 @@ jobs:
 
           # Count documents in applications collection (optional)
           kubectl exec mongodb-0 -n $NAMESPACE -- \
-            mongo 127.0.0.1:27017/prc-${{ matrix.environment }} \
+            mongosh 127.0.0.1:27017/prc-${{ matrix.environment }} \
             -u user54L \
-            --eval "print('Document count: ' + db.applications.count())" || true
+            --eval "print('Document count: ' + db.applications.countDocuments())" || true
 
       - name: Deployment Summary
         if: success()
