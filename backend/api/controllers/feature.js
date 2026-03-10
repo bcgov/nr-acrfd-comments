@@ -31,7 +31,7 @@ exports.publicGet = function(args, res, next) {
     }
   }
   if (args.swagger.params.applicationId && args.swagger.params.applicationId.value !== undefined) {
-    _.assignIn(query, { applicationID: mongoose.Types.ObjectId(args.swagger.params.applicationId.value) });
+    _.assignIn(query, { applicationID: new mongoose.Types.ObjectId(args.swagger.params.applicationId.value) });
   }
   if (args.swagger.params.tantalisId && args.swagger.params.tantalisId.value !== undefined) {
     _.assignIn(query, { 'properties.DISPOSITION_TRANSACTION_SID': args.swagger.params.tantalisId.value });
@@ -70,7 +70,7 @@ exports.protectedGet = function(args, res, next) {
     }
   }
   if (args.swagger.params.applicationId && args.swagger.params.applicationId.value !== undefined) {
-    _.assignIn(query, { applicationID: mongoose.Types.ObjectId(args.swagger.params.applicationId.value) });
+    _.assignIn(query, { applicationID: new mongoose.Types.ObjectId(args.swagger.params.applicationId.value) });
   }
   if (args.swagger.params.tantalisId && args.swagger.params.tantalisId.value !== undefined) {
     _.assignIn(query, { 'properties.DISPOSITION_TRANSACTION_SID': args.swagger.params.tantalisId.value });
@@ -102,7 +102,7 @@ exports.protectedDelete = function(args, res, next) {
   if (args.swagger.params.featureId) {
     query = Utils.buildQuery('_id', args.swagger.params.featureId.value, query);
   } else if (args.swagger.params.applicationID && args.swagger.params.applicationID.value !== undefined) {
-    _.assignIn(query, { applicationID: mongoose.Types.ObjectId(args.swagger.params.applicationID.value) });
+    _.assignIn(query, { applicationID: new mongoose.Types.ObjectId(args.swagger.params.applicationID.value) });
   }
 
   if (!Object.keys(query).length > 0) {
