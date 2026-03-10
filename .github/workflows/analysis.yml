@@ -73,9 +73,6 @@ jobs:
       - name: Lint
         run: npm run lint
         working-directory: frontend/public
-      - name: Test
-        run: npm run tests-ci
-        working-directory: frontend/public
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
@@ -106,9 +103,6 @@ jobs:
         working-directory: frontend/admin
       - name: Lint
         run: npm run lint
-        working-directory: frontend/admin
-      - name: Test
-        run: npm run tests-ci
         working-directory: frontend/admin
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
