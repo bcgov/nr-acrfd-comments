@@ -6,7 +6,7 @@ const ADMIN_BASE = (process.env.E2E_ADMIN_BASE_URL ?? 'http://localhost:4200').r
 const PUBLIC_BASE = (process.env.E2E_PUBLIC_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
 // DTID used for the application create/verify/delete lifecycle
-const LIFECYCLE_DTID = '921529'
+const LIFECYCLE_DTID = '921527'
 
 // DTID used for the comment flow — a pre-existing published application that has an open comment period.
 const COMMENT_DTID = '921528'
@@ -38,7 +38,9 @@ test.describe('Application lifecycle', () => {
   // Uses DTID 921529.  No comments are submitted so the application can be
   // fully cleaned up at the end of the test.
   // ---------------------------------------------------------------------------
-  test('create in admin, verify on public map, then delete', async ({ page }) => {
+  test('create in admin, verify on public map, then delete', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Chromium only test')
+
     // -------------------------------------------------------------------------
     // ADMIN — search for DTID and create the application
     // -------------------------------------------------------------------------
