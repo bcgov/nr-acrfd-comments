@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { loginToAdmin } from '../helpers/admin-auth'
+import { waitForServer } from '../helpers/wait-for-server'
 
 const ADMIN_BASE = (process.env.E2E_ADMIN_BASE_URL ?? 'http://localhost:4200').replace(/\/$/, '')
 const PUBLIC_BASE = (process.env.E2E_PUBLIC_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
@@ -15,6 +16,11 @@ const ALLOWED_ENVIRONMENTS = ['local', 'dev']
 const currentEnv = process.env.E2E_ENVIRONMENT ?? ''
 
 test.describe('Application lifecycle', () => {
+  test.beforeAll(async () => {
+    await waitForServer(`${ADMIN_BASE}/`)
+    await waitForServer(`${PUBLIC_BASE}/`)
+  })
+
   test.skip(
     !ALLOWED_ENVIRONMENTS.includes(currentEnv),
     `Lifecycle test skipped — E2E_ENVIRONMENT is "${currentEnv || 'unset'}". Must be one of: ${ALLOWED_ENVIRONMENTS.join(', ')}.`,

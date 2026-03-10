@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { loginToAdmin } from '../helpers/admin-auth'
+import { waitForServer } from '../helpers/wait-for-server'
 
 const TITLE_TEXT = 'Applications, Comments'
 
@@ -8,6 +9,10 @@ const ADMIN_BASE = (process.env.E2E_ADMIN_BASE_URL ?? 'http://localhost:4200').r
 const PUBLIC_BASE = (process.env.E2E_PUBLIC_BASE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
 test.describe('Admin app smoke', () => {
+  test.beforeAll(async () => {
+    await waitForServer(`${ADMIN_BASE}/`)
+  })
+
   test('loads and shows the site header', async ({ page }) => {
     await loginToAdmin(page)
     await page.goto(`${ADMIN_BASE}/admin/`)
@@ -20,6 +25,10 @@ test.describe('Admin app smoke', () => {
 })
 
 test.describe('Public app smoke', () => {
+  test.beforeAll(async () => {
+    await waitForServer(`${PUBLIC_BASE}/`)
+  })
+
   test('loads and shows the site header', async ({ page }) => {
     await page.goto(`${PUBLIC_BASE}/`)
 
