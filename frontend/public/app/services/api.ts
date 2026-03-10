@@ -65,38 +65,32 @@ export class ApiService {
     // this.token = currentUser && currentUser.token;
     this.isMS = window.navigator.msSaveOrOpenBlob ? true : false
     const { hostname } = window.location
-    switch (hostname) {
-      case 'localhost':
-        // Local
-        this.apiPath = 'http://localhost:3001/api/public'
-        this.adminUrl = 'http://localhost:4200'
-        this.env = 'local'
-        break
-
-      case 'acrfd-public-86cabb-dev.apps.silver.devops.gov.bc.ca':
-        // Dev
-        this.apiPath = 'https://nrts-prc-api-86cabb-dev.apps.silver.devops.gov.bc.ca/api/public'
-        this.adminUrl = 'https://acrfd-admin-86cabb-dev.apps.silver.devops.gov.bc.ca/admin/'
-        this.env = 'dev'
-        break
-      case 'acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca':
-        // Dev
-        this.apiPath = 'https://acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca/api/public'
-        this.adminUrl = 'https://acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca/admin/'
-        this.env = 'dev'
-        break
-      case 'acrfd-86cabb-test.apps.silver.devops.gov.bc.ca':
-        // Dev
-        this.apiPath = 'https://acrfd-86cabb-test.apps.silver.devops.gov.bc.ca/api/public'
-        this.adminUrl = 'https://acrfd-86cabb-test.apps.silver.devops.gov.bc.ca/admin/'
-        this.env = 'test'
-        break
-
-      default:
-        // Prod
-        this.apiPath = 'https://comment.nrs.gov.bc.ca/api/public'
-        this.adminUrl = 'https://comment.nrs.gov.bc.ca/admin/'
-        this.env = 'prod'
+    if (hostname === 'localhost') {
+      // Local
+      this.apiPath = 'http://localhost:3001/api/public'
+      this.adminUrl = 'http://localhost:4200'
+      this.env = 'local'
+    } else if (
+      hostname === 'acrfd-public-86cabb-dev.apps.silver.devops.gov.bc.ca' ||
+      hostname === 'acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca'
+    ) {
+      this.apiPath = `${window.location.origin}/api/public`
+      this.adminUrl = `${window.location.origin}/admin/`
+      this.env = 'dev'
+    } else if (hostname === 'acrfd-86cabb-test.apps.silver.devops.gov.bc.ca') {
+      this.apiPath = `${window.location.origin}/api/public`
+      this.adminUrl = `${window.location.origin}/admin/`
+      this.env = 'test'
+    } else if (/^nr-acrfd-comments-\d+\.apps\.silver\.devops\.gov\.bc\.ca$/.test(hostname)) {
+      // PR deployments: backend co-deployed on same host
+      this.apiPath = `https://nrts-prc-api-86cabb-dev.apps.silver.devops.gov.bc.ca/api/public`
+      this.adminUrl = `${window.location.origin}/admin/`
+      this.env = 'dev'
+    } else {
+      // Prod
+      this.apiPath = 'https://comment.nrs.gov.bc.ca/api/public'
+      this.adminUrl = 'https://comment.nrs.gov.bc.ca/admin/'
+      this.env = 'prod'
     }
   }
 

@@ -45,7 +45,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secret.name }}
                   key: mongodb-database
-            - name: MONGODB_ADMIN_PASSWORD
+            - name: MONGODB_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.secret.name }}

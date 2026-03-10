@@ -4,7 +4,7 @@ const DatabaseCleaner = require('database-cleaner')
 const dbCleaner = new DatabaseCleaner('mongodb')
 const mongoose = require('mongoose')
 const mongooseOpts = require('./config/mongoose_options').mongooseOptions
-const mongoDbMemoryServer = require('mongodb-memory-server')
+const { MongoMemoryServer } = require('mongodb-memory-server')
 const _ = require('lodash')
 
 const app = express()
@@ -15,14 +15,13 @@ setupAppServer()
 jest.setTimeout(10000)
 
 beforeAll(async () => {
-  mongoServer = new mongoDbMemoryServer.default({
-    instance: {},
-    binary: {
-      version: '3.2.21', // Mongo Version
-    },
+  mongoServer = await MongoMemoryServer.create()
+  const mongoUri = mongoServer.getUri()
+  await mongoose.connect(mongoUri, mongooseOpts, (err) => {
+    if (err) {
+      throw Error(err)
+    }
   })
-  const mongoUri = await mongoServer.getConnectionString()
-  await mongoose.connect(mongoUri, mongooseOpts)
 })
 
 afterEach((done) => {

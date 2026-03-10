@@ -19,7 +19,6 @@ export class StatusCodes implements ICodeSet {
     mappedCodes: [
       'ABANDONED', // may not be an actual status
       'CANCELLED',
-      'OFFER NOT ACCEPTED',
       'OFFER RESCINDED',
       'RETURNED',
       'REVERTED',
@@ -54,7 +53,7 @@ export class StatusCodes implements ICodeSet {
     code: 'DECISION NOT APPROVED',
     param: 'DNA',
     text: { long: 'Decision: Not Approved', short: 'Not Approved' },
-    mappedCodes: ['DISALLOWED']
+    mappedCodes: ['DISALLOWED', 'OFFER NOT ACCEPTED']
   };
 
   public static readonly UNKNOWN: ICodeGroup = {

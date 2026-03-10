@@ -8,6 +8,13 @@ on:
         description: PR number, test or prod
         default: ${{ github.event.number }}
         type: string
+    secrets:
+      e2e_admin_username:
+        description: Keycloak username for admin e2e tests
+        required: true
+      e2e_admin_password:
+        description: Keycloak password for admin e2e tests
+        required: true
 
 env:
   DOMAIN: apps.silver.devops.gov.bc.ca
@@ -43,10 +50,9 @@ jobs:
 
   e2e-tests:
     name: E2E
-    if: false # Disabled - no Playwright configuration or package-lock.json in frontend directory
     defaults:
       run:
-        working-directory: frontend
+        working-directory: tests/e2e
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
@@ -59,8 +65,8 @@ jobs:
         name: Setup Node
         with:
           node-version: 24
-          cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
+          cache: 'npm'
+          cache-dependency-path: 'tests/e2e/package-lock.json'
       - name: Install dependencies
         run: |
           npm ci
@@ -68,8 +74,12 @@ jobs:
 
       - name: Run Tests
         env:
-          E2E_BASE_URL: https://${{ env.PREFIX }}.${{ env.DOMAIN }}/
-          CI: "true"
+          E2E_ENVIRONMENT: dev
+          E2E_ADMIN_BASE_URL: https://${{ env.PREFIX }}.${{ env.DOMAIN }}/
+          E2E_PUBLIC_BASE_URL: https://${{ env.PREFIX }}.${{ env.DOMAIN }}/
+          E2E_ADMIN_USERNAME: ${{ secrets.e2e_admin_username }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.e2e_admin_password }}
+          CI: 'true'
         run: |
           npx playwright test --project="${{ matrix.project }}" --reporter=html
 
@@ -78,7 +88,7 @@ jobs:
         name: upload results
         with:
           name: playwright-report-${{ matrix.project }}
-          path: "./frontend/playwright-report" # path from current folder
+          path: './tests/e2e/playwright-report'
           retention-days: 7
 
   load-tests:

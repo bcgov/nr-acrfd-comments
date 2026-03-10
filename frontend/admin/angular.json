@@ -23,7 +23,7 @@
               "node_modules/leaflet/dist/leaflet.css",
               "src/styles.scss"
             ],
-            "scripts": ["node_modules/moment/min/moment.min.js"]
+            "scripts": ["node_modules/moment/min/moment.min.js", "node_modules/keycloak-js/dist/keycloak.js"]
           },
           "configurations": {
             "production": {

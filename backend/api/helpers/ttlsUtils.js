@@ -7,7 +7,7 @@
 const _ = require('lodash')
 const mongoose = require('mongoose')
 const qs = require('qs')
-const request = require('request')
+const axios = require('axios')
 const turf = require('@turf/turf')
 const helpers = require('@turf/helpers')
 const spatialUtils = require('./spatialUtils')
@@ -34,36 +34,35 @@ exports.loginWebADE = function() {
 
     defaultLog.debug('WebADE Login url:', url)
 
-    request.get(
-      {
-        url,
+    axios
+      .get(url, {
         headers: {
           Authorization: 'Basic ' + Buffer.from(username + ':' + password).toString('base64'),
         },
-      },
-      function(err, res, body) {
-        if (err) {
+      })
+      .then(function(res) {
+        try {
+          var obj = res.data
+          defaultLog.debug('o:', JSON.stringify(obj))
+          if (obj && obj.access_token) {
+            resolve(obj.access_token)
+          } else {
+            reject()
+          }
+        } catch (e) {
+          defaultLog.error('WebADE Login Error:', e)
+          reject(e)
+        }
+      })
+      .catch(function(err) {
+        if (err.response) {
+          defaultLog.warn('WebADE Login Response:', err.response.status, err.response.data)
+          reject({ code: err.response.status })
+        } else {
           defaultLog.error('WebADE Login Error:', err)
           reject(err)
-        } else if (res && res.statusCode !== 200) {
-          defaultLog.warn('WebADE Login Response:', res.statusCode, body)
-          reject({ code: (res && res.statusCode) || null })
-        } else {
-          try {
-            var obj = JSON.parse(body)
-            defaultLog.debug('o:', JSON.stringify(obj))
-            if (obj && obj.access_token) {
-              resolve(obj.access_token)
-            } else {
-              reject()
-            }
-          } catch (e) {
-            defaultLog.error('WebADE Login Error:', e)
-            reject(e)
-          }
         }
-      },
-    )
+      })
   })
 }
 
@@ -90,60 +89,59 @@ exports.getApplicationByFilenumber = function(
 
     defaultLog.info('Looking up tantalis applications by crown land file number:', url)
 
-    request.get(
-      {
-        url,
-        auth: {
-          bearer: accessToken,
+    axios
+      .get(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
-      },
-      function(err, res, body) {
-        if (err) {
+      })
+      .then(function(res) {
+        try {
+          var obj = res.data
+          defaultLog.debug('o:', JSON.stringify(obj))
+          var applications = []
+          if (obj && obj.elements && obj.elements.length > 0) {
+            for (let app of obj.elements) {
+              var application = {}
+              application.TENURE_PURPOSE = app.purposeCode && app.purposeCode['description']
+              application.TENURE_SUBPURPOSE =
+                app.purposeCode &&
+                app.purposeCode.subPurposeCodes &&
+                app.purposeCode.subPurposeCodes[0] &&
+                app.purposeCode.subPurposeCodes[0]['description']
+              application.TENURE_TYPE = app.landUseTypeCode && app.landUseTypeCode['description']
+              application.TENURE_SUBTYPE =
+                app.landUseTypeCode &&
+                app.landUseTypeCode.landUseSubTypeCodes &&
+                app.landUseTypeCode.landUseSubTypeCodes[0] &&
+                app.landUseTypeCode.landUseSubTypeCodes[0]['description']
+              application.TENURE_STATUS = app.statusCode && app.statusCode['description']
+              application.TENURE_REASON = app.reasonCode && app.reasonCode['description']
+              application.TENURE_STAGE = app.stageCode && app.stageCode['description']
+              application.TENURE_LOCATION = app.locationDescription
+              application.RESPONSIBLE_BUSINESS_UNIT = app.businessUnit && app.businessUnit.name
+              application.CROWN_LANDS_FILE = app.fileNumber
+              application.DISPOSITION_TRANSACTION_SID = app.landUseApplicationId
+              applications.push(application)
+            }
+          } else {
+            defaultLog.info('No results found.')
+          }
+          resolve(applications)
+        } catch (e) {
+          defaultLog.error('Object Parsing Failed:', e)
+          reject(e)
+        }
+      })
+      .catch(function(err) {
+        if (err.response) {
+          defaultLog.warn('TTLS API Response:', err.response.status, err.response.data)
+          reject({ code: err.response.status })
+        } else {
           defaultLog.error('TTLS API Error:', err)
           reject(err)
-        } else if (res && res.statusCode !== 200) {
-          defaultLog.warn('TTLS API Response:', res.statusCode, body)
-          reject({ code: (res && res.statusCode) || null })
-        } else {
-          try {
-            var obj = JSON.parse(body)
-            defaultLog.debug('o:', JSON.stringify(obj))
-            var applications = []
-            if (obj && obj.elements && obj.elements.length > 0) {
-              for (let app of obj.elements) {
-                var application = {}
-                application.TENURE_PURPOSE = app.purposeCode && app.purposeCode['description']
-                application.TENURE_SUBPURPOSE =
-                  app.purposeCode &&
-                  app.purposeCode.subPurposeCodes &&
-                  app.purposeCode.subPurposeCodes[0] &&
-                  app.purposeCode.subPurposeCodes[0]['description']
-                application.TENURE_TYPE = app.landUseTypeCode && app.landUseTypeCode['description']
-                application.TENURE_SUBTYPE =
-                  app.landUseTypeCode &&
-                  app.landUseTypeCode.landUseSubTypeCodes &&
-                  app.landUseTypeCode.landUseSubTypeCodes[0] &&
-                  app.landUseTypeCode.landUseSubTypeCodes[0]['description']
-                application.TENURE_STATUS = app.statusCode && app.statusCode['description']
-                application.TENURE_REASON = app.reasonCode && app.reasonCode['description']
-                application.TENURE_STAGE = app.stageCode && app.stageCode['description']
-                application.TENURE_LOCATION = app.locationDescription
-                application.RESPONSIBLE_BUSINESS_UNIT = app.businessUnit && app.businessUnit.name
-                application.CROWN_LANDS_FILE = app.fileNumber
-                application.DISPOSITION_TRANSACTION_SID = app.landUseApplicationId
-                applications.push(application)
-              }
-            } else {
-              defaultLog.info('No results found.')
-            }
-            resolve(applications)
-          } catch (e) {
-            defaultLog.error('Object Parsing Failed:', e)
-            reject(e)
-          }
         }
-      },
-    )
+      })
   })
 }
 
@@ -171,135 +169,134 @@ exports.getApplicationByDispositionID = function(
 
     defaultLog.info('Looking up tantalis applications by disposition id:', url)
 
-    request.get(
-      {
-        url,
-        auth: {
-          bearer: accessToken,
+    axios
+      .get(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
-      },
-      function(err, res, body) {
-        if (err) {
+      })
+      .then(function(res) {
+        try {
+          var obj = res.data
+          defaultLog.debug('o:', JSON.stringify(obj))
+          var application = {}
+          if (obj) {
+            // Setup the application object.
+            application.TENURE_PURPOSE = obj.purposeCode && obj.purposeCode['description']
+            application.TENURE_SUBPURPOSE =
+              obj.purposeCode &&
+              obj.purposeCode.subPurposeCodes &&
+              obj.purposeCode.subPurposeCodes[0] &&
+              obj.purposeCode.subPurposeCodes[0]['description']
+            application.TENURE_TYPE = obj.landUseTypeCode && obj.landUseTypeCode['description']
+            application.TENURE_SUBTYPE =
+              obj.landUseTypeCode &&
+              obj.landUseTypeCode.landUseSubTypeCodes &&
+              obj.landUseTypeCode.landUseSubTypeCodes[0] &&
+              obj.landUseTypeCode.landUseSubTypeCodes[0]['description']
+            application.TENURE_STATUS = obj.statusCode && obj.statusCode['description']
+            application.TENURE_REASON = obj.reasonCode && obj.reasonCode['description']
+            application.TENURE_STAGE = obj.stageCode && obj.stageCode['description']
+            application.TENURE_LOCATION = obj.locationDescription
+            application.RESPONSIBLE_BUSINESS_UNIT = obj.businessUnit && obj.businessUnit.name
+            application.CROWN_LANDS_FILE = obj.fileNumber
+            application.DISPOSITION_TRANSACTION_SID = dispositionID
+            application.parcels = []
+            application.interestedParties = []
+            application.statusHistoryEffectiveDate =
+              obj.statusHistory && obj.statusHistory[0] != null
+                ? new Date(obj.statusHistory[0].effectiveDate) // convert Unix Epoch Time (ms)
+                : null
+
+            // WKT conversion to GEOJSON
+            for (let geo of obj.interestParcels) {
+              if (geo.wktGeometry) {
+                var feature = {}
+                feature.TENURE_LEGAL_DESCRIPTION = geo.legalDescription
+                feature.TENURE_AREA_IN_HECTARES = geo.areaInHectares
+                feature.INTRID_SID = geo.interestParcelId
+                feature.FEATURE_CODE = geo.featureCode
+                feature.FEATURE_AREA_SQM = geo.areaInSquareMetres
+                feature.FEATURE_LENGTH_M = geo.areaLengthInMetres
+                feature.TENURE_EXPIRY = geo.expiryDate
+
+                var crs = {}
+                crs.properties = {}
+                crs.properties.name = 'urn:ogc:def:crs:EPSG::4326'
+
+                const geometryArray = spatialUtils.getGeometryArray(geo)
+
+                // geometryArray.forEach(geometry => {
+                application.parcels.push({
+                  type: 'Feature',
+                  // NB: always store as GeometryCollection - this is currently the simplest way of handling
+                  // both regular Geometry {Polygon}, {Line}, {etc} AND GeometryCollection [{Polygon}, {Line}, {etc}]
+                  // types without introducing new mongo collections and code to handle the fact that
+                  // GeometryCollections have a different spec than the regular Geometry types.
+                  geometry: { type: 'GeometryCollection', geometries: geometryArray },
+                  properties: feature,
+                  crs: crs,
+                })
+                // });
+              }
+            }
+
+            // Calculate areaHectares, prepare centroid calculation
+            var centroids = helpers.featureCollection([])
+            application.areaHectares = 0.0
+            _.each(application.parcels, function(f) {
+              // Get the polygon and put it for later centroid calculation
+              if (f.geometry) {
+                centroids.features.push(turf.centroid(f))
+              }
+
+              if (f.properties && f.properties.TENURE_AREA_IN_HECTARES) {
+                application.areaHectares += parseFloat(f.properties.TENURE_AREA_IN_HECTARES)
+              }
+            })
+
+            // Centroid of all the shapes.
+            if (centroids.features.length > 0) {
+              application.centroid = turf.centroid(centroids).geometry.coordinates
+            }
+
+            // Interested Parties
+            for (let party of obj.interestedParties) {
+              var partyObj = {}
+              partyObj.interestedPartyType = party.interestedPartyType
+
+              if (party.interestedPartyType == 'I') {
+                partyObj.firstName = party.individual && party.individual.firstName
+                partyObj.lastName = party.individual && party.individual.lastName
+              } else {
+                // party.interestedPartyType == 'O'
+                partyObj.legalName = party.organization && party.organization.legalName
+                partyObj.divisionBranch = party.organization && party.organization.divisionBranch
+              }
+              // Check if we've already added this.
+              if (!_.includes(application.interestedParties, partyObj)) {
+                application.interestedParties.push(partyObj)
+              }
+            }
+            resolve(application)
+          } else {
+            defaultLog.info('Nothing found.')
+            resolve(null)
+          }
+        } catch (e) {
+          defaultLog.error('Object Parsing Failed:', e)
+          reject(e)
+        }
+      })
+      .catch(function(err) {
+        if (err.response) {
+          defaultLog.warn('TTLS API Response:', err.response.status, err.response.data)
+          reject({ code: err.response.status })
+        } else {
           defaultLog.error('TTLS API Error:', err)
           reject(err)
-        } else if (res && res.statusCode !== 200) {
-          defaultLog.warn('TTLS API Response:', res.statusCode, body)
-          reject({ code: (res && res.statusCode) || null })
-        } else {
-          try {
-            var obj = JSON.parse(body)
-            defaultLog.debug('o:', JSON.stringify(obj))
-            var application = {}
-            if (obj) {
-              // Setup the application object.
-              application.TENURE_PURPOSE = obj.purposeCode && obj.purposeCode['description']
-              application.TENURE_SUBPURPOSE =
-                obj.purposeCode &&
-                obj.purposeCode.subPurposeCodes &&
-                obj.purposeCode.subPurposeCodes[0] &&
-                obj.purposeCode.subPurposeCodes[0]['description']
-              application.TENURE_TYPE = obj.landUseTypeCode && obj.landUseTypeCode['description']
-              application.TENURE_SUBTYPE =
-                obj.landUseTypeCode &&
-                obj.landUseTypeCode.landUseSubTypeCodes &&
-                obj.landUseTypeCode.landUseSubTypeCodes[0] &&
-                obj.landUseTypeCode.landUseSubTypeCodes[0]['description']
-              application.TENURE_STATUS = obj.statusCode && obj.statusCode['description']
-              application.TENURE_REASON = obj.reasonCode && obj.reasonCode['description']
-              application.TENURE_STAGE = obj.stageCode && obj.stageCode['description']
-              application.TENURE_LOCATION = obj.locationDescription
-              application.RESPONSIBLE_BUSINESS_UNIT = obj.businessUnit && obj.businessUnit.name
-              application.CROWN_LANDS_FILE = obj.fileNumber
-              application.DISPOSITION_TRANSACTION_SID = dispositionID
-              application.parcels = []
-              application.interestedParties = []
-              application.statusHistoryEffectiveDate =
-                obj.statusHistory && obj.statusHistory[0] != null
-                  ? new Date(obj.statusHistory[0].effectiveDate) // convert Unix Epoch Time (ms)
-                  : null
-
-              // WKT conversion to GEOJSON
-              for (let geo of obj.interestParcels) {
-                if (geo.wktGeometry) {
-                  var feature = {}
-                  feature.TENURE_LEGAL_DESCRIPTION = geo.legalDescription
-                  feature.TENURE_AREA_IN_HECTARES = geo.areaInHectares
-                  feature.INTRID_SID = geo.interestParcelId
-                  feature.FEATURE_CODE = geo.featureCode
-                  feature.FEATURE_AREA_SQM = geo.areaInSquareMetres
-                  feature.FEATURE_LENGTH_M = geo.areaLengthInMetres
-                  feature.TENURE_EXPIRY = geo.expiryDate
-
-                  var crs = {}
-                  crs.properties = {}
-                  crs.properties.name = 'urn:ogc:def:crs:EPSG::4326'
-
-                  const geometryArray = spatialUtils.getGeometryArray(geo)
-
-                  // geometryArray.forEach(geometry => {
-                  application.parcels.push({
-                    type: 'Feature',
-                    // NB: always store as GeometryCollection - this is currently the simplest way of handling
-                    // both regular Geometry {Polygon}, {Line}, {etc} AND GeometryCollection [{Polygon}, {Line}, {etc}]
-                    // types without introducing new mongo collections and code to handle the fact that
-                    // GeometryCollections have a different spec than the regular Geometry types.
-                    geometry: { type: 'GeometryCollection', geometries: geometryArray },
-                    properties: feature,
-                    crs: crs,
-                  })
-                  // });
-                }
-              }
-
-              // Calculate areaHectares, prepare centroid calculation
-              var centroids = helpers.featureCollection([])
-              application.areaHectares = 0.0
-              _.each(application.parcels, function(f) {
-                // Get the polygon and put it for later centroid calculation
-                if (f.geometry) {
-                  centroids.features.push(turf.centroid(f))
-                }
-
-                if (f.properties && f.properties.TENURE_AREA_IN_HECTARES) {
-                  application.areaHectares += parseFloat(f.properties.TENURE_AREA_IN_HECTARES)
-                }
-              })
-
-              // Centroid of all the shapes.
-              if (centroids.features.length > 0) {
-                application.centroid = turf.centroid(centroids).geometry.coordinates
-              }
-
-              // Interested Parties
-              for (let party of obj.interestedParties) {
-                var partyObj = {}
-                partyObj.interestedPartyType = party.interestedPartyType
-
-                if (party.interestedPartyType == 'I') {
-                  partyObj.firstName = party.individual && party.individual.firstName
-                  partyObj.lastName = party.individual && party.individual.lastName
-                } else {
-                  // party.interestedPartyType == 'O'
-                  partyObj.legalName = party.organization && party.organization.legalName
-                  partyObj.divisionBranch = party.organization && party.organization.divisionBranch
-                }
-                // Check if we've already added this.
-                if (!_.includes(application.interestedParties, partyObj)) {
-                  application.interestedParties.push(partyObj)
-                }
-              }
-              resolve(application)
-            } else {
-              defaultLog.info('Nothing found.')
-              resolve(null)
-            }
-          } catch (e) {
-            defaultLog.error('Object Parsing Failed:', e)
-            reject(e)
-          }
         }
-      },
-    )
+      })
   })
 }
 
@@ -351,38 +348,37 @@ const internalGetAllApplicationIDs = function(
 
     defaultLog.info('Looking up all tantalis applications:', url)
 
-    request.get(
-      {
-        url,
-        auth: {
-          bearer: accessToken,
+    axios
+      .get(url, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
         },
-      },
-      function(err, res, body) {
-        if (err) {
+      })
+      .then(function(res) {
+        try {
+          var obj = res.data
+          defaultLog.debug('o:', JSON.stringify(obj))
+          _.forEach(obj.elements, function(element) {
+            if (element) {
+              applicationIDs.push(element.landUseApplicationId)
+            }
+          })
+
+          resolve({ applicationIDs: applicationIDs, totalRowCount: obj.totalRowCount })
+        } catch (error) {
+          defaultLog.error('internalGetAllApplicationIDs error:', error)
+          reject(error)
+        }
+      })
+      .catch(function(err) {
+        if (err.response) {
+          defaultLog.warn('TTLS API Response:', err.response.status, err.response.data)
+          reject({ code: err.response.status })
+        } else {
           defaultLog.error('TTLS API Error:', err)
           reject(err)
-        } else if (res && res.statusCode !== 200) {
-          defaultLog.warn('TTLS API Response:', res.statusCode, body)
-          reject({ code: (res && res.statusCode) || null })
-        } else {
-          try {
-            var obj = JSON.parse(body)
-            defaultLog.debug('o:', JSON.stringify(obj))
-            _.forEach(obj.elements, function(element) {
-              if (element) {
-                applicationIDs.push(element.landUseApplicationId)
-              }
-            })
-
-            resolve({ applicationIDs: applicationIDs, totalRowCount: obj.totalRowCount })
-          } catch (error) {
-            defaultLog.error('internalGetAllApplicationIDs error:', error)
-            reject(error)
-          }
         }
-      },
-    )
+      })
   }).then((paginatedApplications) => {
     defaultLog.debug('internalGetAllApplicationIDs: ', JSON.stringify(paginatedApplications))
 
@@ -477,7 +473,6 @@ const updateFeatures = function(acrfdApp, tantalisApp) {
     let helpers = require('@turf/helpers')
 
     let centroids = helpers.featureCollection([])
-    acrfdApp.featureCentroids = [] // array of individual feature centroids for mapping
     _.each(tantalisApp.parcels, function(f) {
       // Tags default public
       f.tags = [['sysadmin'], ['public']]
@@ -496,10 +491,7 @@ const updateFeatures = function(acrfdApp, tantalisApp) {
 
       allFeaturesForDisp.push(f)
       // Get the polygon and put it for later centroid calculation
-      const featureCentroid = turf.centroid(f)
-      centroids.features.push(featureCentroid)
-      // Store individual feature centroid for frontend map display
-      acrfdApp.featureCentroids.push(featureCentroid.geometry.coordinates)
+      centroids.features.push(turf.centroid(f))
     })
     // Centroid of all the shapes.
     if (centroids.features.length > 0) {

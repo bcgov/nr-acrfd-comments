@@ -296,42 +296,45 @@ exports.protectedDelete = function(args, res, next) {
   defaultLog.info('Delete Application:', appId)
 
   var Application = mongoose.model('Application')
-  Application.findOne({ _id: appId }, function(err, o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Application.findOne({ _id: appId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Set the deleted flag.
-      Actions.delete(o).then(
-        function(deleted) {
-          // Deleted successfully
-          return Actions.sendResponse(res, 200, deleted)
-        },
-        function(err) {
-          // Error
-          return Actions.sendResponse(res, 400, err)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Set the deleted flag.
+        Actions.delete(o).then(
+          function(deleted) {
+            // Deleted successfully
+            return Actions.sendResponse(res, 200, deleted)
+          },
+          function(err) {
+            // Error
+            return Actions.sendResponse(res, 400, err)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('application protectedDelete:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 var doFeaturePubUnPub = function(action, objId) {
   return new Promise(function(resolve, reject) {
     var Feature = require('mongoose').model('Feature')
 
-    Feature.find({ applicationID: objId }, function(err, featureObjects) {
-      if (err) {
-        reject(err)
-      } else {
+    Feature.find({ applicationID: objId })
+      .then(function(featureObjects) {
         var promises = []
         _.each(featureObjects, function(f) {
           promises.push(f)
         })
         // Iterate through all the promises before returning.
-        Promise.resolve()
+        return Promise.resolve()
           .then(function() {
             return promises.reduce(function(previousItem, currentItem) {
               return previousItem.then(function() {
@@ -357,8 +360,8 @@ var doFeaturePubUnPub = function(action, objId) {
             defaultLog.info('done Pub/UnPub all features.')
             resolve()
           })
-      }
-    })
+      })
+      .catch(reject)
   })
 }
 
@@ -476,15 +479,20 @@ exports.protectedPut = function(args, res, next) {
   // TODO sanitize/update audits.
 
   var Application = require('mongoose').model('Application')
-  Application.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true }, function(err, o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
-      return Actions.sendResponse(res, 200, o)
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+  Application.findOneAndUpdate({ _id: objId }, obj, { upsert: false, new: true })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
+        return Actions.sendResponse(res, 200, o)
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('application protectedPut:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Publish/Unpublish the application
@@ -493,31 +501,36 @@ exports.protectedPublish = function(args, res, next) {
   defaultLog.info('Publish Application:', objId)
 
   var Application = require('mongoose').model('Application')
-  Application.findOne({ _id: objId }, function(err, o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Application.findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Go through the feature collection and publish the corresponding features.
-      doFeaturePubUnPub('publish', objId)
-        .then(function() {
-          // Publish the application
-          return Actions.publish(o)
-        })
-        .then(
-          function(published) {
-            // Published successfully
-            return Actions.sendResponse(res, 200, published)
-          },
-          function(err) {
-            // Error
-            return Actions.sendResponse(res, null, err)
-          },
-        )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Go through the feature collection and publish the corresponding features.
+        doFeaturePubUnPub('publish', objId)
+          .then(function() {
+            // Publish the application
+            return Actions.publish(o)
+          })
+          .then(
+            function(published) {
+              // Published successfully
+              return Actions.sendResponse(res, 200, published)
+            },
+            function(err) {
+              // Error
+              return Actions.sendResponse(res, 500, err)
+            },
+          )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('application protectedPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 exports.protectedUnPublish = function(args, res, next) {
@@ -525,30 +538,35 @@ exports.protectedUnPublish = function(args, res, next) {
   defaultLog.info('UnPublish Application:', objId)
 
   var Application = require('mongoose').model('Application')
-  Application.findOne({ _id: objId }, function(err, o) {
-    if (o) {
-      defaultLog.debug('o:', JSON.stringify(o))
+  Application.findOne({ _id: objId })
+    .then(function(o) {
+      if (o) {
+        defaultLog.debug('o:', JSON.stringify(o))
 
-      // Go through the feature collection and publish the corresponding features.
-      doFeaturePubUnPub('unpublish', objId)
-        .then(function() {
-          return Actions.unPublish(o)
-        })
-        .then(
-          function(unpublished) {
-            // UnPublished successfully
-            return Actions.sendResponse(res, 200, unpublished)
-          },
-          function(err) {
-            // Error
-            return Actions.sendResponse(res, null, err)
-          },
-        )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        // Go through the feature collection and publish the corresponding features.
+        doFeaturePubUnPub('unpublish', objId)
+          .then(function() {
+            return Actions.unPublish(o)
+          })
+          .then(
+            function(unpublished) {
+              // UnPublished successfully
+              return Actions.sendResponse(res, 200, unpublished)
+            },
+            function(err) {
+              // Error
+              return Actions.sendResponse(res, 500, err)
+            },
+          )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('application protectedUnPublish:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 // Refreshes an applications meta and features with the latest data from Tantalis.
@@ -557,24 +575,29 @@ exports.protectedRefresh = function(args, res, next) {
   defaultLog.info('Refresh Application, _id:', objId)
 
   var Application = require('mongoose').model('Application')
-  Application.findOne({ _id: objId }, function(err, applicationObject) {
-    if (applicationObject) {
-      defaultLog.debug('application before refresh:', JSON.stringify(applicationObject))
+  Application.findOne({ _id: objId })
+    .then(function(applicationObject) {
+      if (applicationObject) {
+        defaultLog.debug('application before refresh:', JSON.stringify(applicationObject))
 
-      TTLSUtils.updateApplication(applicationObject).then(
-        (updatedApplicationAndFeatures) => {
-          defaultLog.debug('application after refresh:', JSON.stringify(applicationObject))
-          return Actions.sendResponse(res, 200, updatedApplicationAndFeatures)
-        },
-        (error) => {
-          return Actions.sendResponse(res, null, error)
-        },
-      )
-    } else {
-      defaultLog.warn("Couldn't find that object!")
-      return Actions.sendResponse(res, 404, {})
-    }
-  })
+        TTLSUtils.updateApplication(applicationObject).then(
+          (updatedApplicationAndFeatures) => {
+            defaultLog.debug('application after refresh:', JSON.stringify(applicationObject))
+            return Actions.sendResponse(res, 200, updatedApplicationAndFeatures)
+          },
+          (error) => {
+            return Actions.sendResponse(res, 500, error)
+          },
+        )
+      } else {
+        defaultLog.warn("Couldn't find that object!")
+        return Actions.sendResponse(res, 404, {})
+      }
+    })
+    .catch(function(err) {
+      defaultLog.error('application protectedRefresh:', err)
+      return Actions.sendResponse(res, 500, err)
+    })
 }
 
 /* eslint-disable no-redeclare */
@@ -827,17 +850,14 @@ var addStandardQueryFilters = function(query, args) {
       })
     } else {
       // use geoIntersects polygon query
-      // specify custom MongoDB CRS to support queries with area larger than a single hemisphere
+      // Note: the urn:x-mongodb:crs:strictwinding:EPSG:4326 custom CRS was removed in MongoDB 5.0.
+      // MongoDB 8+ uses the GeoJSON default (WGS84 / EPSG:4326) with counter-clockwise winding order.
       _.assignIn(query, {
         centroid: {
           $geoIntersects: {
             $geometry: {
               type: 'Polygon',
               coordinates: [coordinates],
-              crs: {
-                type: 'name',
-                properties: { name: 'urn:x-mongodb:crs:strictwinding:EPSG:4326' },
-              },
             },
           },
         },

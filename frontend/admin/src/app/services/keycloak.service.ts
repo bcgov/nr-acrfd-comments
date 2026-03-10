@@ -14,31 +14,41 @@ export class KeycloakService {
   private loggedOut: string;
 
   constructor() {
-    switch (window.location.origin) {
-      case 'http://localhost:4200':
-      case 'https://nrts-prc-dev.pathfinder.gov.bc.ca':
-      case 'https://nrts-prc-master.pathfinder.gov.bc.ca':
-      case 'https://acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca':
-      case 'https://acrfd-admin-86cabb-dev.apps.silver.devops.gov.bc.ca':
-        // Local, Dev, Master
-        this.keycloakEnabled = true;
-        this.keycloakUrl = 'https://dev.loginproxy.gov.bc.ca/auth';
-        this.keycloakRealm = 'standard';
-        break;
-
-      case 'https://nrts-prc-test.pathfinder.gov.bc.ca':
-      case 'https://acrfd-86cabb-test.apps.silver.devops.gov.bc.ca':
-        // Test
-        this.keycloakEnabled = true;
-        this.keycloakUrl = 'https://test.loginproxy.gov.bc.ca/auth';
-        this.keycloakRealm = 'standard';
-        break;
-
-      default:
-        // Prod
-        this.keycloakEnabled = true;
-        this.keycloakUrl = 'https://loginproxy.gov.bc.ca/auth';
-        this.keycloakRealm = 'standard';
+    const origin = window.location.origin;
+    
+    console.log('~~~')
+    if (origin === 'http://localhost:4200') {
+      // Local development - Keycloak disabled
+      this.keycloakEnabled = false;
+      console.log('Local')
+    } else if (
+      origin === 'https://nrts-prc-dev.pathfinder.gov.bc.ca' ||
+      origin === 'https://nrts-prc-master.pathfinder.gov.bc.ca' ||
+      origin === 'https://acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca' ||
+      origin === 'https://acrfd-admin-86cabb-dev.apps.silver.devops.gov.bc.ca' ||
+      // PR deployments: nr-acrfd-comments-<pr-number>.apps.silver.devops.gov.bc.ca
+      /^https:\/\/nr-acrfd-comments-\d+\.apps\.silver\.devops\.gov\.bc\.ca$/.test(origin)
+    ) {
+      // Dev, Master, PR deployments
+      this.keycloakEnabled = true;
+      this.keycloakUrl = 'https://dev.loginproxy.gov.bc.ca/auth';
+      this.keycloakRealm = 'standard';
+      console.log('Dev')
+    } else if (
+      origin === 'https://nrts-prc-test.pathfinder.gov.bc.ca' ||
+      origin === 'https://acrfd-86cabb-test.apps.silver.devops.gov.bc.ca'
+    ) {
+      // Test
+      this.keycloakEnabled = true;
+      this.keycloakUrl = 'https://test.loginproxy.gov.bc.ca/auth';
+      this.keycloakRealm = 'standard';
+      console.log('Test')
+    } else {
+      // Prod
+      this.keycloakEnabled = true;
+      this.keycloakUrl = 'https://loginproxy.gov.bc.ca/auth';
+      this.keycloakRealm = 'standard';
+      console.log('Prod')
     }
   }
 
@@ -66,7 +76,7 @@ export class KeycloakService {
     if (this.keycloakEnabled) {
       // Bootup KC
       this.keycloakEnabled = true;
-      return new Promise((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         const config = {
           url: this.keycloakUrl,
           realm: this.keycloakRealm,
@@ -100,10 +110,10 @@ export class KeycloakService {
         this.keycloakAuth.onTokenExpired = () => {
           this.keycloakAuth
             .updateToken()
-            .success(refreshed => {
+            .then(refreshed => {
               console.log('KC refreshed token?:', refreshed);
             })
-            .error(err => {
+            .catch(err => {
               console.log('KC refresh error:', err);
             });
         };
@@ -118,7 +128,7 @@ export class KeycloakService {
 
         this.keycloakAuth
           .init(initOptions)
-          .success(auth => {
+          .then(auth => {
             // console.log('KC Refresh Success?:', this.keycloakAuth.authServerUrl);
             console.log('KC Success:', auth);
             if (!auth) {
@@ -132,7 +142,7 @@ export class KeycloakService {
               resolve();
             }
           })
-          .error(err => {
+          .catch(err => {
             console.log('KC error:', err);
             reject();
           });
@@ -179,12 +189,12 @@ export class KeycloakService {
     return new Observable(observer => {
       this.keycloakAuth
         .updateToken(30)
-        .success(refreshed => {
+        .then(refreshed => {
           console.log('KC refreshed token?:', refreshed);
           observer.next();
           observer.complete();
         })
-        .error(err => {
+        .catch(err => {
           console.log('KC refresh error:', err);
           observer.error();
         });

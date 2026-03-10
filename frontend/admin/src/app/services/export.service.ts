@@ -30,6 +30,23 @@ export class ExportService {
   }
 
   /**
+   * Generates the given data as an xlsx workbook and returns it as an ArrayBuffer.
+   * Useful for embedding in a ZIP archive instead of directly triggering a download.
+   *
+   * @param {any[]} data array of flattened objects
+   * @param {string[]} [columns=[]] data fields to include in excel, in order
+   * @returns {ArrayBuffer}
+   * @memberof ExportService
+   */
+  public exportAsExcelBuffer(data: any[], columns: string[] = []): ArrayBuffer {
+    const json_opts: XLSX.JSON2SheetOpts = { header: columns };
+    const worksheet: XLSX.WorkSheet = XLSX.utils.json_to_sheet(data, json_opts);
+    const workbook: XLSX.WorkBook = { Sheets: { data: worksheet }, SheetNames: ['data'] };
+    const write_opts: XLSX.WritingOptions = { bookType: 'xlsx', type: 'array' };
+    return XLSX.write(workbook, write_opts) as ArrayBuffer;
+  }
+
+  /**
    * Generates and downloads the given data as a csv file.
    *
    * @param {any[]} data array of objects
