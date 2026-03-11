@@ -499,6 +499,34 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
       return
     }
 
+    const zip = new JSZip()
+    const docFolder = zip.folder('documents')
+
+    // Fetch application-level documents
+    let appDocuments = []
+    try {
+      appDocuments = await this.documentService
+        .getAllByApplicationId(this.application._id)
+        .pipe(takeUntil(this.ngUnsubscribe))
+        .toPromise()
+    } catch (e) {
+      console.warn('Could not fetch application documents', e)
+    }
+
+    // Collect all documents (application-level + comment-level) and download in parallel
+    const commentDocs = allComments.reduce((acc, comment) => acc.concat(comment.documents), [])
+    const allDocs = [...appDocuments, ...commentDocs].filter((doc) => !!doc._id)
+    await Promise.all(
+      allDocs.map(async (doc) => {
+        try {
+          const blob = await this.api.getDocumentBlob(doc._id)
+          docFolder.file(doc.documentFileName, blob)
+        } catch (e) {
+          console.warn(`Could not download document: ${doc.documentFileName}`, e)
+        }
+      }),
+    )
+
     const app = this.application
     const safeStr = (val: any): string => (val == null ? '\u2014' : String(val))
 
@@ -640,7 +668,10 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
 
     const baseName =
       'comments-' + app.meta.applicants.replace(/\s/g, '_') + moment(new Date()).format('-YYYYMMDD')
-    doc.save(`${baseName}.pdf`)
+    zip.file(`${baseName}.pdf`, doc.output('arraybuffer'))
+
+    const zipBlob = await zip.generateAsync({ type: 'blob' })
+    saveAs(zipBlob, `${baseName}.zip`)
   }
   /** Print to PDF end */
 
