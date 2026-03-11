@@ -528,7 +528,6 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
     )
 
     const app = this.application
-    const safeStr = (val: any): string => (val == null ? '\u2014' : String(val))
 
     const periodStart =
       app.meta.currentPeriod && app.meta.currentPeriod.startDate
@@ -547,19 +546,19 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
     // Title
     doc.setFontSize(16)
     doc.setTextColor(0, 51, 102)
-    doc.text(`Comments \u2013 Crown Land File: ${safeStr(app.meta.clFile)}`, margin, 16)
+    doc.text('Comments – Crown Land File: ' + (app.meta.clFile || '—'), margin, 16)
 
     // Application info block
     autoTable(doc, {
       startY: 22,
       body: [
-        ['Applicant(s):', safeStr(app.meta.applicants)],
-        ['Purpose / Subpurpose:', `${safeStr(app.purpose)} / ${safeStr(app.subpurpose)}`],
-        ['Type / Subtype:', `${safeStr(app.type)} / ${safeStr(app.subtype)}`],
-        ['Location:', safeStr(app.location)],
-        ['Description:', safeStr(app.description)],
-        ['Comment Period:', `${safeStr(periodStart)} \u2013 ${safeStr(periodEnd)}`],
-        ['Total Comments:', safeStr(allComments.length)],
+        ['Applicant(s):', app.meta.applicants || '—'],
+        ['Purpose / Subpurpose:', (app.purpose || '—') + ' / ' + (app.subpurpose || '—')],
+        ['Type / Subtype:', (app.type || '—') + ' / ' + (app.subtype || '—')],
+        ['Location:', app.location || '—'],
+        ['Description:', app.description || '—'],
+        ['Comment Period:', periodStart + ' – ' + periodEnd],
+        ['Total Comments:', allComments.length],
       ],
       columnStyles: {
         0: { fontStyle: 'bold', cellWidth: 50, textColor: [80, 80, 80] as any },
@@ -579,6 +578,7 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
       fillColor: [240, 244, 248] as any,
       textColor: [60, 60, 60] as any,
     }
+    const linkStyle = { textColor: [0, 0, 204] as any }
 
     allComments.forEach((c, i) => {
       const author = c.commentAuthor
@@ -586,7 +586,7 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
       const anonStr = author && author.requestedAnonymous ? 'Yes' : 'No'
       const docNames =
         c.documents && c.documents.length
-          ? c.documents.map((d: any) => d.displayName || d.documentFileName).join(', ')
+          ? c.documents.map((d: any) => d.displayName || d.documentFileName).join('\n')
           : '\u2014'
 
       const cardY: number = (doc as any).lastAutoTable.finalY + (i === 0 ? 10 : 16)
@@ -610,37 +610,37 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
         body: [
           [
             { content: 'Contact Name', styles: labelStyle },
-            safeStr(author && author.contactName),
+            (author && author.contactName) || '—',
             { content: 'Date', styles: labelStyle },
             dateStr,
           ],
           [
             { content: 'Organization', styles: labelStyle },
-            safeStr(author && author.orgName),
+            (author && author.orgName) || '—',
             { content: 'Anonymous', styles: labelStyle },
             anonStr,
           ],
           [
             { content: 'Location', styles: labelStyle },
-            safeStr(author && author.location),
+            (author && author.location) || '—',
             { content: 'Status', styles: labelStyle },
-            safeStr(c.commentStatus),
+            c.commentStatus || '—',
           ],
           [
             { content: 'Email', styles: labelStyle },
-            safeStr(author && author.internal && author.internal.email),
+            (author && author.internal && author.internal.email) || '—',
             { content: 'Reviewer Notes', styles: labelStyle },
-            safeStr(c.review && c.review.reviewerNotes),
+            (c.review && c.review.reviewerNotes) || '—',
           ],
           [
             { content: 'Phone', styles: labelStyle },
-            safeStr(author && author.internal && author.internal.phone),
+            (author && author.internal && author.internal.phone) || '—',
             { content: 'Attachments', styles: labelStyle },
-            docNames,
+            { content: docNames, styles: linkStyle },
           ],
           [
             { content: 'Comment', styles: labelStyle },
-            { content: safeStr(c.comment), colSpan: 3, styles: { minCellHeight: 18 } },
+            { content: c.comment || '—', colSpan: 3, styles: { minCellHeight: 18 } },
           ],
         ],
         columnStyles: {
@@ -652,6 +652,19 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
         theme: 'grid',
         styles: { fontSize: 9, overflow: 'linebreak', cellPadding: 3 },
         margin: { left: margin, right: margin },
+        didDrawCell: ({ row, column, cell, doc }) => {
+          // Attachments cell: row 4, column 3 (value column after "Attachments" label)
+          if (row.index !== 4 || column.index !== 3 || !c.documents || !c.documents.length) return
+
+          const pad = 3 // matches cellPadding in styles above
+          const lineH = ((9 * 25.4) / 72) * 1.15 // 9pt → mm with line-height factor
+
+          c.documents.forEach((d: any, idx: number) => {
+            doc.link(cell.x + pad, cell.y + pad + idx * lineH, cell.width - pad * 2, lineH, {
+              url: 'documents/' + encodeURIComponent(d.documentFileName),
+            })
+          })
+        },
       })
     })
 
