@@ -83,7 +83,7 @@ jobs:
             -Dsonar.exclusions=**/coverage/**,**/node_modules/**,**/*spec.ts
             -Dsonar.organization=bcgov-sonarcloud
             -Dsonar.projectKey=quickstart-openshift_frontend_public
-            -Dsonar.sources=frontend/public/src
+            -Dsonar.sources=frontend/public
             -Dsonar.test.inclusions=**/*spec.ts
             -Dsonar.javascript.lcov.reportPaths=frontend/public/coverage/lcov.info
 
