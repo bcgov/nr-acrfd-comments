@@ -41,7 +41,7 @@ exports.protectedOptions = function(args, res, next) {
 }
 
 exports.publicHead = function(args, res, next) {
-  // Build match query if on appId route
+  // Build match query if on appId route.
   var query = {}
 
   // Add in the default fields to the projection so that the incoming query will work for any selected fields.
