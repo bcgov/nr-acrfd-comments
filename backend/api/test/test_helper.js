@@ -17,11 +17,7 @@ jest.setTimeout(10000)
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create()
   const mongoUri = mongoServer.getUri()
-  await mongoose.connect(mongoUri, mongooseOpts, (err) => {
-    if (err) {
-      throw Error(err)
-    }
-  })
+  await mongoose.connect(mongoUri, mongooseOpts)
 })
 
 afterEach((done) => {
