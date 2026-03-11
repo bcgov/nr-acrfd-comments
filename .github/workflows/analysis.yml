@@ -73,19 +73,6 @@ jobs:
       - name: Lint
         run: npm run lint
         working-directory: frontend/public
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
-        with:
-          args: >
-            -Dsonar.exclusions=**/coverage/**,**/node_modules/**,**/*spec.ts
-            -Dsonar.organization=bcgov-sonarcloud
-            -Dsonar.projectKey=quickstart-openshift_frontend_public
-            -Dsonar.sources=frontend/public
-            -Dsonar.test.inclusions=**/*spec.ts
-            -Dsonar.javascript.lcov.reportPaths=frontend/public/coverage/lcov.info
 
   frontend-admin-tests:
     name: Frontend Admin Tests
@@ -104,19 +91,6 @@ jobs:
       - name: Lint
         run: npm run lint
         working-directory: frontend/admin
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN_FRONTEND }}
-        with:
-          args: >
-            -Dsonar.exclusions=**/coverage/**,**/node_modules/**,**/*spec.ts
-            -Dsonar.organization=bcgov-sonarcloud
-            -Dsonar.projectKey=quickstart-openshift_frontend_admin
-            -Dsonar.sources=frontend/admin/src
-            -Dsonar.test.inclusions=**/*spec.ts
-            -Dsonar.javascript.lcov.reportPaths=frontend/admin/coverage/lcov.info
 
   # https://github.com/marketplace/actions/aqua-security-trivy
   trivy:
