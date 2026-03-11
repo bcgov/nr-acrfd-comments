@@ -23,7 +23,7 @@ secret:
 persistence:
   # Use existing PVC - this preserves your current data
   enabled: true
-  existingClaim: mongodb-data
+  existingClaim: mongodbdata
   mountPath: /var/lib/mongodb/data
   # If existingClaim is not set, a new PVC will be created
   # storageClassName: ""
