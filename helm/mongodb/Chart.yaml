@@ -6,7 +6,7 @@ version: 1.1.0
 appVersion: '7.0'
 maintainers:
   - name: BC Government
-    email: bcgov@gov.bc.ca
+    email: barrett.falk@gov.bc.ca
 keywords:
   - mongodb
   - database
