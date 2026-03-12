@@ -52,7 +52,7 @@ readinessProbe:
   enabled: true
   tcpSocket:
     port: 27017
-  initialDelaySeconds: 5
+  initialDelaySeconds: 60
   timeoutSeconds: 1
   periodSeconds: 10
   successThreshold: 1
