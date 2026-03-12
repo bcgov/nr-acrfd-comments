@@ -1,0 +1,8 @@
+# Ignore Helm charts and templates
+helm/
+charts/
+
+# Ignore build artifacts
+node_modules/
+dist/
+build/
