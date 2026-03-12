@@ -12,7 +12,7 @@ image:
 
 imagePullSecrets: []
 nameOverride: ''
-fullnameOverride: 'mongodb'
+fullnameOverride: 'mongodb-app'
 
 # Secret configuration - pre-defined Kubernetes Secret
 # The Secret must contain: mongodb-username, mongodb-password, mongodb-database, mongodb-admin-password
