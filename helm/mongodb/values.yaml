@@ -50,14 +50,9 @@ resources:
 # Readiness probe - checks if MongoDB is accepting connections
 readinessProbe:
   enabled: true
-  exec:
-    command:
-      - /bin/sh
-      - '-i'
-      - '-c'
-      - 'mongosh 127.0.0.1:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD
-        --eval="quit()"'
-  initialDelaySeconds: 3
+  tcpSocket:
+    port: 27017
+  initialDelaySeconds: 5
   timeoutSeconds: 1
   periodSeconds: 10
   successThreshold: 1
