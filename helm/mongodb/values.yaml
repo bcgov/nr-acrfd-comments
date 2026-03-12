@@ -24,7 +24,7 @@ persistence:
   # Use existing PVC - this preserves your current data
   enabled: true
   existingClaim: mongodbdata
-  mountPath: /var/lib/mongodb/data
+  mountPath: /data/db
   # If existingClaim is not set, a new PVC will be created
   # storageClassName: ""
   # size: 10Gi
