@@ -1,0 +1,96 @@
+{{- if .Values.migration.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "mongodb.fullname" . }}-migrate-fcv
+  labels:
+    {{- include "mongodb.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    "helm.sh/hook": post-upgrade,post-install
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "mongodb.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      serviceAccountName: default
+      containers:
+        - name: mongodb-migrate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # Wait for MongoDB to be ready
+              echo "Waiting for MongoDB to be ready..."
+              for i in {1..60}; do
+                if mongosh 127.0.0.1:27017 -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" --eval "db.adminCommand('ping')" 2>/dev/null | grep -q 'ok.*1'; then
+                  echo "MongoDB is ready"
+                  break
+                fi
+                echo "Attempt $i: MongoDB not ready yet, retrying in 5 seconds..."
+                sleep 5
+              done
+
+              # Get current FCV
+              echo "Checking current Feature Compatibility Version..."
+              CURRENT_FCV=$(mongosh 127.0.0.1:27017 -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin --eval "db.adminCommand('getParameter', {getParameter: 'featureCompatibilityVersion'})" --json | grep -oP '"version":\s*"\K[^"]+' || echo "unknown")
+              echo "Current FCV: $CURRENT_FCV"
+              echo "Target FCV: {{ .Values.migration.targetFCV }}"
+
+              # Run FCV upgrade if needed
+              if [ "$CURRENT_FCV" != "{{ .Values.migration.targetFCV }}" ]; then
+                echo "Upgrading Feature Compatibility Version to {{ .Values.migration.targetFCV }}..."
+                mongosh 127.0.0.1:27017 -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
+              db.adminCommand({ setFeatureCompatibilityVersion: "{{ .Values.migration.targetFCV }}" })
+              EOF
+                
+                if [ $? -eq 0 ]; then
+                  echo "✅ FCV upgrade successful"
+                else
+                  echo "❌ FCV upgrade failed"
+                  exit 1
+                fi
+              else
+                echo "ℹ️  FCV is already at target version, skipping upgrade"
+              fi
+
+              # Validate the upgrade
+              echo "Validating migration..."
+              mongosh 127.0.0.1:27017 -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
+              const status = db.adminCommand('serverStatus');
+              print("✅ Server Status: OK");
+              print("Database Name: " + db.getName());
+              const appStatus = db.getSiblingDB("prc-dev").stats();
+              print("✅ Application Database: OK");
+              print("Collections: " + appStatus.collections);
+              print("Documents: " + appStatus.objects);
+              exit(0);
+              EOF
+
+              echo "✅ Migration completed successfully"
+          env:
+            - name: MONGODB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.name }}
+                  key: mongodb-username
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.name }}
+                  key: mongodb-password
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+{{- end }}

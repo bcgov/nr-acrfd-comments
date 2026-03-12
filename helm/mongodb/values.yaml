@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   # Using OpenShift's built-in MongoDB image
   repository: image-registry.openshift-image-registry.svc:5000/openshift/mongodb
-  tag: '3.6'
+  tag: '7.0'
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -55,7 +55,7 @@ readinessProbe:
       - /bin/sh
       - '-i'
       - '-c'
-      - 'mongo 127.0.0.1:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD
+      - 'mongosh 127.0.0.1:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD
         --eval="quit()"'
   initialDelaySeconds: 3
   timeoutSeconds: 1
@@ -93,3 +93,11 @@ podSecurityPolicy:
 
 # Enable debug logging
 debug: false
+
+# Migration configuration - for upgrading from older MongoDB versions
+migration:
+  # Set to true to enable automatic Feature Compatibility Version (FCV) upgrade
+  # Required when upgrading from MongoDB 3.6 to 7.0
+  enabled: true
+  # Target FCV version to upgrade to (should match the major.minor of MongoDB image)
+  targetFCV: '7.0'
