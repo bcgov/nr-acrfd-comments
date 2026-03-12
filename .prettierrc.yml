@@ -28,3 +28,7 @@ printWidth: 100
 # Arrow function parentheses
 arrowParens: 'always'
 
+# Exclude Helm templates and other non-code files from formatting
+ignorePatterns:
+  - 'helm/**'
+  - 'charts/**'
