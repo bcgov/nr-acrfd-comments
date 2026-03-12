@@ -5,8 +5,8 @@
 replicaCount: 1
 
 image:
-  # Using OpenShift's built-in MongoDB image
-  repository: image-registry.openshift-image-registry.svc:5000/openshift/mongodb
+  # Using official MongoDB image from Docker Hub
+  repository: mongo
   tag: '7.0'
   pullPolicy: IfNotPresent
 
