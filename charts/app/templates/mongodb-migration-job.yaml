@@ -30,7 +30,7 @@ spec:
               # Wait for MongoDB to be ready
               echo "Waiting for MongoDB to be ready..."
               for i in {1..60}; do
-                if mongosh "{{ include "mongodb.fullname" . }}-0:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" --eval "db.adminCommand('ping')" 2>/dev/null | grep -q 'ok'; then
+                if mongosh "{{ .Values.mongodb.service.name | default "mongodb" }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" --eval "db.adminCommand('ping')" 2>/dev/null | grep -q 'ok'; then
                   echo "MongoDB is ready"
                   break
                 fi
@@ -40,14 +40,14 @@ spec:
 
               # Get current FCV
               echo "Checking current Feature Compatibility Version..."
-              CURRENT_FCV=$(mongosh "{{ include "mongodb.fullname" . }}-0:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin --eval "db.adminCommand('getParameter', {getParameter: 'featureCompatibilityVersion'})" --json 2>/dev/null | grep -oP '"version":\s*"\K[^"]+' || echo "unknown")
+              CURRENT_FCV=$(mongosh "{{ .Values.mongodb.service.name | default "mongodb" }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin --eval "db.adminCommand('getParameter', {getParameter: 'featureCompatibilityVersion'})" --json 2>/dev/null | grep -oP '"version":\s*"\K[^"]+' || echo "unknown")
               echo "Current FCV: $CURRENT_FCV"
               echo "Target FCV: {{ .Values.mongodb.migration.targetFCV }}"
 
               # Run FCV upgrade if needed
               if [ "$CURRENT_FCV" != "{{ .Values.mongodb.migration.targetFCV }}" ]; then
                 echo "Upgrading Feature Compatibility Version to {{ .Values.mongodb.migration.targetFCV }}..."
-                mongosh "{{ include "mongodb.fullname" . }}-0:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
+                mongosh "{{ .Values.mongodb.service.name | default "mongodb" }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
               db.adminCommand({ setFeatureCompatibilityVersion: "{{ .Values.mongodb.migration.targetFCV }}" })
               EOF
                 
@@ -63,7 +63,7 @@ spec:
 
               # Validate the upgrade
               echo "Validating migration..."
-              mongosh "{{ include "mongodb.fullname" . }}-0:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
+              mongosh "{{ .Values.mongodb.service.name | default "mongodb" }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
               const status = db.adminCommand('serverStatus');
               print("✅ Server Status: OK");
               print("Database Name: " + db.getName());
