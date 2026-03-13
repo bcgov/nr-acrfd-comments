@@ -130,3 +130,79 @@ frontend:
   pdb:
     enabled: false # enable it in PRODUCTION for having pod disruption budget.
     minAvailable: 1 # the minimum number of pods that must be available during the disruption budget.
+
+# MongoDB configuration
+mongodb:
+  #-- enable or disable MongoDB
+  enabled: true
+  
+  image:
+    repository: mongo
+    tag: '7.0'
+    pullPolicy: IfNotPresent
+  
+  imagePullSecrets: []
+  nameOverride: ''
+  fullnameOverride: 'mongodb-app'
+  
+  secret:
+    name: mongodb-secret
+  
+  persistence:
+    enabled: true
+    existingClaim: mongodbdata
+    mountPath: /data/db
+  
+  service:
+    name: mongodb
+    type: ClusterIP
+    port: 27017
+    clusterIP: None
+  
+  resources:
+    limits:
+      cpu: '2'
+      memory: 4Gi
+    requests:
+      cpu: 250m
+      memory: 2Gi
+  
+  readinessProbe:
+    enabled: true
+    tcpSocket:
+      port: 27017
+    initialDelaySeconds: 60
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+  
+  livenessProbe:
+    enabled: true
+    tcpSocket:
+      port: 27017
+    initialDelaySeconds: 30
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+  
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    fsGroup: 999
+    fsGroupChangePolicy: "OnRootMismatch"
+  
+  podSecurityPolicy:
+    enabled: false
+    name: ''
+  
+  debug: false
+  
+  migration:
+    enabled: true
+    targetFCV: '7.0'

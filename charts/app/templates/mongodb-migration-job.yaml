@@ -1,4 +1,4 @@
-{{- if .Values.migration.enabled }}
+{{- if .Values.mongodb.migration.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -21,8 +21,8 @@ spec:
       serviceAccountName: default
       containers:
         - name: mongodb-migrate
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
           command:
             - /bin/sh
             - -c
@@ -42,13 +42,13 @@ spec:
               echo "Checking current Feature Compatibility Version..."
               CURRENT_FCV=$(mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin --eval "db.adminCommand('getParameter', {getParameter: 'featureCompatibilityVersion'})" --json | grep -oP '"version":\s*"\K[^"]+' || echo "unknown")
               echo "Current FCV: $CURRENT_FCV"
-              echo "Target FCV: {{ .Values.migration.targetFCV }}"
+              echo "Target FCV: {{ .Values.mongodb.migration.targetFCV }}"
 
               # Run FCV upgrade if needed
-              if [ "$CURRENT_FCV" != "{{ .Values.migration.targetFCV }}" ]; then
-                echo "Upgrading Feature Compatibility Version to {{ .Values.migration.targetFCV }}..."
+              if [ "$CURRENT_FCV" != "{{ .Values.mongodb.migration.targetFCV }}" ]; then
+                echo "Upgrading Feature Compatibility Version to {{ .Values.mongodb.migration.targetFCV }}..."
                 mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
-              db.adminCommand({ setFeatureCompatibilityVersion: "{{ .Values.migration.targetFCV }}" })
+              db.adminCommand({ setFeatureCompatibilityVersion: "{{ .Values.mongodb.migration.targetFCV }}" })
               EOF
                 
                 if [ $? -eq 0 ]; then
@@ -79,12 +79,12 @@ spec:
             - name: MONGODB_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secret.name }}
+                  name: {{ .Values.mongodb.secret.name }}
                   key: mongodb-username
             - name: MONGODB_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secret.name }}
+                  name: {{ .Values.mongodb.secret.name }}
                   key: mongodb-password
           resources:
             requests:

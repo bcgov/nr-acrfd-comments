@@ -1,3 +1,4 @@
+{{- if .Values.mongodb.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,12 +6,13 @@ metadata:
   labels:
     {{- include "mongodb.labels" . | nindent 4 }}
 spec:
-  clusterIP: {{ .Values.service.clusterIP }}
-  type: {{ .Values.service.type }}
+  clusterIP: {{ .Values.mongodb.service.clusterIP }}
+  type: {{ .Values.mongodb.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ .Values.mongodb.service.port }}
       targetPort: mongodb
       protocol: TCP
       name: mongodb
   selector:
     {{- include "mongodb.selectorLabels" . | nindent 4 }}
+{{- end }}
