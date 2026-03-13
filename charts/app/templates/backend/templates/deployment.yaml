@@ -27,6 +27,23 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox:1.28
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Waiting for MongoDB to be ready at {{ .Values.mongodb.service.name | default "mongodb" }}:{{ .Values.mongodb.service.port | default 27017 }}..."
+              for i in $(seq 1 60); do
+                if nc -z {{ .Values.mongodb.service.name | default "mongodb" }} {{ .Values.mongodb.service.port | default 27017 }}; then
+                  echo "✅ MongoDB is ready"
+                  exit 0
+                fi
+                echo "Attempt $i: MongoDB not ready yet, retrying..."
+                sleep 5
+              done
+              echo "❌ MongoDB failed to become ready after 5 minutes"
+              exit 1
       containers:
         - name: {{ include "backend.fullname" . }}
           securityContext:
