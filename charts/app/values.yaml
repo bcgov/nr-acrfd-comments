@@ -199,7 +199,3 @@ mongodb:
     name: ''
   
   debug: false
-  
-  migration:
-    enabled: true
-    targetFCV: '3.6'
