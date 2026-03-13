@@ -44,23 +44,10 @@ jobs:
         github.event.number }}
       triggers: ('backend/' 'frontend/' 'charts/' '.github/workflows/.deployer.yml')
 
-  mongodb-deploy:
-    name: MongoDB Deployment (${{ github.event.number }})
-    needs: [builds]
-    uses: ./.github/workflows/.deployer.yml
-    secrets:
-      oc_namespace: ${{ secrets.OC_NAMESPACE }}
-      oc_token: ${{ secrets.OC_TOKEN }}
-    with:
-      environment: "dev"
-      tag: mongodb-${{ github.event.number }}
-      directory: "charts/app"
-      triggers: ('charts/app/' '.github/workflows/pr-open.yml')
-
   tests:
     name: Tests
-    if: needs.deploys.result == 'success' && needs.mongodb-deploy.result == 'success'
-    needs: [deploys, mongodb-deploy]
+    if: needs.deploys.result == 'success'
+    needs: [deploys]
     uses: ./.github/workflows/.tests.yml
     secrets:
       e2e_admin_username: ${{ secrets.E2E_ADMIN_USERNAME }}
@@ -68,7 +55,7 @@ jobs:
 
   results:
     name: PR Results
-    needs: [builds, deploys, mongodb-deploy, tests]
+    needs: [builds, deploys, tests]
     if: always()
     runs-on: ubuntu-slim
     steps:
