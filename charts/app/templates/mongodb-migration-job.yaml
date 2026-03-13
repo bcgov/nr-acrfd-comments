@@ -19,6 +19,23 @@ spec:
     spec:
       restartPolicy: Never
       serviceAccountName: default
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox:1.28
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Waiting for MongoDB to be ready at {{ .Values.mongodb.service.name | default "mongodb" }}:{{ .Values.mongodb.service.port | default 27017 }}..."
+              for i in $(seq 1 60); do
+                if nc -z {{ .Values.mongodb.service.name | default "mongodb" }} {{ .Values.mongodb.service.port | default 27017 }}; then
+                  echo "✅ MongoDB is ready"
+                  exit 0
+                fi
+                echo "Attempt $i: MongoDB not ready yet, retrying..."
+                sleep 5
+              done
+              echo "❌ MongoDB failed to become ready after 5 minutes"
+              exit 1
       containers:
         - name: mongodb-migrate
           image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
@@ -27,19 +44,10 @@ spec:
             - /bin/bash
             - -c
             - |
-              # Wait for MongoDB to be ready
-              echo "Waiting for MongoDB to be ready..."
-              for i in {1..60}; do
-                if mongosh "{{ .Values.mongodb.service.name | default "mongodb" }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" --eval "db.adminCommand('ping')" 2>/dev/null | grep -q 'ok'; then
-                  echo "MongoDB is ready"
-                  break
-                fi
-                echo "Attempt $i: MongoDB not ready yet, retrying in 5 seconds..."
-                sleep 5
-              done
-
+              # MongoDB is already confirmed reachable by init container
+              echo "Connecting to MongoDB and checking Feature Compatibility Version..."
+              
               # Get current FCV
-              echo "Checking current Feature Compatibility Version..."
               CURRENT_FCV=$(mongosh "{{ .Values.mongodb.service.name | default "mongodb" }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin --eval "db.adminCommand('getParameter', {getParameter: 'featureCompatibilityVersion'})" --json 2>/dev/null | grep -oP '"version":\s*"\K[^"]+' || echo "unknown")
               echo "Current FCV: $CURRENT_FCV"
               echo "Target FCV: {{ .Values.mongodb.migration.targetFCV }}"
