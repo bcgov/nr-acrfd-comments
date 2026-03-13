@@ -79,7 +79,11 @@ tolerations: []
 affinity: {}
 
 # Security context
-securityContext: {}
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 999
+  fsGroup: 999
+  fsGroupChangePolicy: "OnRootMismatch"
 
 # Pod security policy
 podSecurityPolicy:

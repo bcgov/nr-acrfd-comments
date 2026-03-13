@@ -30,7 +30,7 @@ spec:
               # Wait for MongoDB to be ready
               echo "Waiting for MongoDB to be ready..."
               for i in {1..60}; do
-                if mongosh 127.0.0.1:27017 -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" --eval "db.adminCommand('ping')" 2>/dev/null | grep -q 'ok.*1'; then
+                if mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" --eval "db.adminCommand('ping')" 2>/dev/null | grep -q 'ok.*1'; then
                   echo "MongoDB is ready"
                   break
                 fi
@@ -40,14 +40,14 @@ spec:
 
               # Get current FCV
               echo "Checking current Feature Compatibility Version..."
-              CURRENT_FCV=$(mongosh 127.0.0.1:27017 -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin --eval "db.adminCommand('getParameter', {getParameter: 'featureCompatibilityVersion'})" --json | grep -oP '"version":\s*"\K[^"]+' || echo "unknown")
+              CURRENT_FCV=$(mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin --eval "db.adminCommand('getParameter', {getParameter: 'featureCompatibilityVersion'})" --json | grep -oP '"version":\s*"\K[^"]+' || echo "unknown")
               echo "Current FCV: $CURRENT_FCV"
               echo "Target FCV: {{ .Values.migration.targetFCV }}"
 
               # Run FCV upgrade if needed
               if [ "$CURRENT_FCV" != "{{ .Values.migration.targetFCV }}" ]; then
                 echo "Upgrading Feature Compatibility Version to {{ .Values.migration.targetFCV }}..."
-                mongosh 127.0.0.1:27017 -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
+                mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
               db.adminCommand({ setFeatureCompatibilityVersion: "{{ .Values.migration.targetFCV }}" })
               EOF
                 
@@ -63,7 +63,7 @@ spec:
 
               # Validate the upgrade
               echo "Validating migration..."
-              mongosh 127.0.0.1:27017 -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
+              mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin << 'EOF'
               const status = db.adminCommand('serverStatus');
               print("✅ Server Status: OK");
               print("Database Name: " + db.getName());
