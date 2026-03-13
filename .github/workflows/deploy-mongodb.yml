@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "helm/mongodb/**"
+      - "charts/app/**"
       - ".github/workflows/deploy-mongodb.yml"
   workflow_dispatch:
     inputs:
@@ -25,9 +25,9 @@ jobs:
     name: MongoDB Deploy (dev)
     uses: ./.github/workflows/.deployer.yml
     with:
-      directory: "helm/mongodb"
+      directory: "charts/app"
       environment: "dev"
-      triggers: ('helm/mongodb/' '.github/workflows/deploy-mongodb.yml')
+      triggers: ('charts/app/' '.github/workflows/deploy-mongodb.yml')
     secrets:
       oc_namespace: ${{ secrets.OC_NAMESPACE }}
       oc_token: ${{ secrets.OC_TOKEN }}
@@ -37,9 +37,9 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'test'
     uses: ./.github/workflows/.deployer.yml
     with:
-      directory: "helm/mongodb"
+      directory: "charts/app"
       environment: "test"
-      triggers: ('helm/mongodb/' '.github/workflows/deploy-mongodb.yml')
+      triggers: ('charts/app/' '.github/workflows/deploy-mongodb.yml')
     secrets:
       oc_namespace: ${{ secrets.OC_NAMESPACE }}
       oc_token: ${{ secrets.OC_TOKEN }}
@@ -49,9 +49,9 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
     uses: ./.github/workflows/.deployer.yml
     with:
-      directory: "helm/mongodb"
+      directory: "charts/app"
       environment: "prod"
-      triggers: ('helm/mongodb/' '.github/workflows/deploy-mongodb.yml')
+      triggers: ('charts/app/' '.github/workflows/deploy-mongodb.yml')
     secrets:
       oc_namespace: ${{ secrets.OC_NAMESPACE }}
       oc_token: ${{ secrets.OC_TOKEN }}
