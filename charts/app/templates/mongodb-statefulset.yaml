@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "mongodb.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ include "mongodb.fullname" . }}
+  serviceName: {{ include "mongodb.fullname" . }}-headless
   replicas: {{ .Values.mongodb.replicaCount }}
   selector:
     matchLabels:

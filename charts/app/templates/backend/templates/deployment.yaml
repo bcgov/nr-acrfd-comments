@@ -35,12 +35,26 @@ spec:
             allowPrivilegeEscalation: false
           image: "{{ .Values.global.registry | default "ghcr.io" }}/{{.Values.global.repository}}/backend:{{ .Values.global.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ default "Always" .Values.backend.imagePullPolicy }}
-          envFrom:
-            - secretRef:
-                name: mongodb-secret
           env:
+            - name: MONGODB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongodb-username
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongodb-password
+            - name: MONGODB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongodb-database
             - name: LOG_LEVEL
               value: info
+            - name: MONGODB_SERVICE_HOST
+              value: "mongodb-app"
           ports:
             - name: http
               containerPort: {{ .Values.backend.service.targetPort }}

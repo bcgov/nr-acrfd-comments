@@ -3,11 +3,11 @@
 #-- global variables, can be accessed by sub-charts.
 global:
   #-- the registry where the images are stored. override during runtime for other registry at global level or individual level.
-  repository: ~ # provide the repo name from where images will be sourced for example bcgo
+  repository: bcgov/nr-acrfd-comments
   #-- the registry where the images are stored. override during runtime for other registry at global level or individual level. default is ghcr.io
   registry: ghcr.io # ghcr.io for directly streaming from github container registry or "artifacts.developer.gov.bc.ca/github-docker-remote" for artifactory, or any other registry. Templates use default "ghcr.io" as fallback if overridden to null.
   #-- the tag of the image, it can be latest, 1.0.0 etc..., or the sha256 hash
-  tag: ~
+  tag: latest
   #-- turn off autoscaling for the entire suite by setting this to false. default is true.
   autoscaling: false
   #-- global secrets, can be accessed by sub-charts.
@@ -138,7 +138,7 @@ mongodb:
   
   image:
     repository: mongo
-    tag: '7.0'
+    tag: '4.0'
     pullPolicy: IfNotPresent
   
   imagePullSecrets: []
@@ -157,7 +157,6 @@ mongodb:
     name: mongodb
     type: ClusterIP
     port: 27017
-    clusterIP: None
   
   resources:
     limits:
@@ -191,11 +190,9 @@ mongodb:
   tolerations: []
   affinity: {}
   
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 999
-    fsGroup: 999
-    fsGroupChangePolicy: "OnRootMismatch"
+  securityContext: {}
+    # OpenShift will automatically assign appropriate UID/GID
+    # Do not set runAsUser or fsGroup - let OpenShift SCC handle it
   
   podSecurityPolicy:
     enabled: false
@@ -205,4 +202,4 @@ mongodb:
   
   migration:
     enabled: true
-    targetFCV: '7.0'
+    targetFCV: '4.0'

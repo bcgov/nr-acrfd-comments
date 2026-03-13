@@ -7,7 +7,7 @@ metadata:
     {{- include "mongodb.labels" . | nindent 4 }}
     app.kubernetes.io/component: migration
   annotations:
-    "helm.sh/hook": post-upgrade,post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-weight": "0"
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
@@ -24,13 +24,13 @@ spec:
           image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
           imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
           command:
-            - /bin/sh
+            - /bin/bash
             - -c
             - |
               # Wait for MongoDB to be ready
               echo "Waiting for MongoDB to be ready..."
               for i in {1..60}; do
-                if mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" --eval "db.adminCommand('ping')" 2>/dev/null | grep -q 'ok.*1'; then
+                if mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" --eval "db.adminCommand('ping')" 2>/dev/null | grep -q 'ok'; then
                   echo "MongoDB is ready"
                   break
                 fi
@@ -40,7 +40,7 @@ spec:
 
               # Get current FCV
               echo "Checking current Feature Compatibility Version..."
-              CURRENT_FCV=$(mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin --eval "db.adminCommand('getParameter', {getParameter: 'featureCompatibilityVersion'})" --json | grep -oP '"version":\s*"\K[^"]+' || echo "unknown")
+              CURRENT_FCV=$(mongosh "{{ include "mongodb.fullname" . }}:27017" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" admin --eval "db.adminCommand('getParameter', {getParameter: 'featureCompatibilityVersion'})" --json 2>/dev/null | grep -oP '"version":\s*"\K[^"]+' || echo "unknown")
               echo "Current FCV: $CURRENT_FCV"
               echo "Target FCV: {{ .Values.mongodb.migration.targetFCV }}"
 
@@ -67,7 +67,7 @@ spec:
               const status = db.adminCommand('serverStatus');
               print("✅ Server Status: OK");
               print("Database Name: " + db.getName());
-              const appStatus = db.getSiblingDB("prc-dev").stats();
+              const appStatus = db.getSiblingDB("prc-prod").stats();
               print("✅ Application Database: OK");
               print("Collections: " + appStatus.collections);
               print("Documents: " + appStatus.objects);
