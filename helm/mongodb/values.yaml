@@ -49,27 +49,25 @@ resources:
 
 # Readiness probe - checks if MongoDB is accepting connections
 readinessProbe:
-  exec:
-    command:
-      - /bin/sh
-      - -c
-      - mongosh --quiet --eval "db.adminCommand('ping')" || exit 1
-  initialDelaySeconds: 10
-  timeoutSeconds: 5
+  enabled: true
+  tcpSocket:
+    port: 27017
+  initialDelaySeconds: 60
+  timeoutSeconds: 1
   periodSeconds: 10
-  failureThreshold: 6
+  successThreshold: 1
+  failureThreshold: 3
 
 # Liveness probe - restarts pod if MongoDB stops responding
 livenessProbe:
-  exec:
-    command:
-      - /bin/sh
-      - -c
-      - mongosh --quiet --eval "db.adminCommand('ping')" || exit 1
+  enabled: true
+  tcpSocket:
+    port: 27017
   initialDelaySeconds: 30
-  timeoutSeconds: 10
-  periodSeconds: 20
-  failureThreshold: 6
+  timeoutSeconds: 1
+  periodSeconds: 10
+  successThreshold: 1
+  failureThreshold: 3
 
 # Node selector - optional, allows targeting specific nodes
 nodeSelector: {}
