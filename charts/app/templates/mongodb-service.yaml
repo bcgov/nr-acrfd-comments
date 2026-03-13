@@ -11,7 +11,7 @@ spec:
   type: ClusterIP
   ports:
     - name: mongodb
-      port: {{ .Values.mongodb.port | default 27017 }}
+      port: {{ .Values.mongodb.service.port | default 27017 }}
       protocol: TCP
       targetPort: mongodb
   selector:
