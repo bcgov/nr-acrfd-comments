@@ -138,7 +138,7 @@ mongodb:
   
   image:
     repository: mongo
-    tag: '4.0'
+    tag: '3.6'
     pullPolicy: IfNotPresent
   
   imagePullSecrets: []
@@ -202,4 +202,4 @@ mongodb:
   
   migration:
     enabled: true
-    targetFCV: '4.0'
+    targetFCV: '3.6'

@@ -21,13 +21,13 @@ spec:
       serviceAccountName: default
       initContainers:
         - name: wait-for-mongodb
-          image: busybox:1.28
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
           command: ['sh', '-c']
           args:
             - |
               echo "Waiting for MongoDB to be ready at {{ .Values.mongodb.service.name | default "mongodb" }}:{{ .Values.mongodb.service.port | default 27017 }}..."
               for i in $(seq 1 60); do
-                if nc -z {{ .Values.mongodb.service.name | default "mongodb" }} {{ .Values.mongodb.service.port | default 27017 }}; then
+                if mongosh "{{ .Values.mongodb.service.name | default "mongodb" }}:{{ .Values.mongodb.service.port | default 27017 }}" -u "$MONGODB_USER" -p "$MONGODB_PASSWORD" --eval "db.adminCommand('ping')" 2>/dev/null | grep -q 'ok'; then
                   echo "✅ MongoDB is ready"
                   exit 0
                 fi
@@ -36,6 +36,17 @@ spec:
               done
               echo "❌ MongoDB failed to become ready after 5 minutes"
               exit 1
+          env:
+            - name: MONGODB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.secret.name }}
+                  key: mongodb-username
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.secret.name }}
+                  key: mongodb-password
       containers:
         - name: mongodb-migrate
           image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
