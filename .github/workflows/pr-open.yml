@@ -52,8 +52,8 @@ jobs:
       oc_namespace: ${{ secrets.OC_NAMESPACE }}
       oc_token: ${{ secrets.OC_TOKEN }}
     with:
-      directory: "helm/mongodb"
-      triggers: ('helm/mongodb/' '.github/workflows/pr-open.yml')
+      directory: "charts/app"
+      triggers: ('charts/app/' '.github/workflows/pr-open.yml')
 
   tests:
     name: Tests
