@@ -52,6 +52,8 @@ jobs:
       oc_namespace: ${{ secrets.OC_NAMESPACE }}
       oc_token: ${{ secrets.OC_TOKEN }}
     with:
+      environment: "dev"
+      tag: mongodb-${{ github.event.number }}
       directory: "charts/app"
       triggers: ('charts/app/' '.github/workflows/pr-open.yml')
 
