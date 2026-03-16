@@ -38,6 +38,9 @@
 		reverse_proxy {$BACKEND_URL} {
 			header_up Host {http.reverse_proxy.upstream.hostport}
 			header_up X-Real-IP {remote_host}
+			header_up Connection "keep-alive"
+			keepalive 32
+			keepalive_timeout 60s
 		}
 	}
 
