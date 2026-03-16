@@ -26,20 +26,20 @@ COPY public/package*.json ./
 COPY public/angular.json ./
 COPY public/tsconfig*.json ./
 
-# Copy source code (public has flat structure, not under src/)
-COPY public/app ./app
-COPY public/assets ./assets
-COPY public/environments ./environments
+# Copy source code into src/ directory structure (as expected by Angular)
+COPY public/app ./src/app
+COPY public/assets ./src/assets
+COPY public/environments ./src/environments
 COPY public/e2e ./e2e
-COPY public/index.html ./
-COPY public/main.ts ./
-COPY public/polyfills.ts ./
-COPY public/styles.scss ./
-COPY public/test.ts ./
-COPY public/karma.conf.js ./
-COPY public/tsconfig.app.json ./
-COPY public/tsconfig.spec.json ./
-COPY public/typings.d.ts ./
+COPY public/index.html ./src/
+COPY public/main.ts ./src/
+COPY public/polyfills.ts ./src/
+COPY public/styles.scss ./src/
+COPY public/test.ts ./src/
+COPY public/karma.conf.js ./src/
+COPY public/tsconfig.app.json ./src/
+COPY public/tsconfig.spec.json ./src/
+COPY public/typings.d.ts ./src/
 
 # Install dependencies and build
 RUN npm install --legacy-peer-deps && \
