@@ -76,6 +76,7 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private doNotify = true // whether to emit notification
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>()
   private mapBaseLayerName = 'World Topographic'
+  private moveendDebounceTimer: any = null // debounce timer for map move events
 
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]) // all of BC
 
@@ -224,15 +225,20 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.map.on('moveend', () => {
       // console.log('moveend');
 
-      // notify applications component of updated coordinates
-      // const newZoom = this.map.getZoom();
-      // const doEmit = newZoom <= this.oldZoom; // ignore zooming in
-      // this.oldZoom = newZoom;
-      // if (doEmit) { this.emitCoordinates(); }
-      if (this.isMapReady && this.doNotify) {
-        this.emitCoordinates()
+      // Debounce coordinate updates to avoid hammering backend with requests
+      // Clear any pending timer
+      if (this.moveendDebounceTimer) {
+        clearTimeout(this.moveendDebounceTimer)
       }
-      this.doNotify = true // reset for next time
+
+      // Set new timer - only emit coordinates after 500ms of no movement
+      this.moveendDebounceTimer = setTimeout(() => {
+        if (this.isMapReady && this.doNotify) {
+          this.emitCoordinates()
+        }
+        this.doNotify = true // reset for next time
+        this.moveendDebounceTimer = null
+      }, 500)
 
       // FUTURE
       // // save map state
@@ -356,6 +362,10 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   public ngOnDestroy() {
     this.clearPolygons()
+    // Clear any pending moveend timer
+    if (this.moveendDebounceTimer) {
+      clearTimeout(this.moveendDebounceTimer)
+    }
     if (this.map) {
       this.map.remove()
     }
