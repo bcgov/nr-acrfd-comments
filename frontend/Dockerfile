@@ -26,8 +26,8 @@ COPY public/package*.json ./
 COPY public/angular.json ./
 COPY public/tsconfig*.json ./
 
-# Copy source code
-COPY public/src ./src
+# Copy source code (public has flat structure, not under src/)
+COPY public/app ./app
 COPY public/assets ./assets
 COPY public/environments ./environments
 COPY public/e2e ./e2e
