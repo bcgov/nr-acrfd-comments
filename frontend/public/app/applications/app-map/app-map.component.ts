@@ -20,6 +20,7 @@ import * as _ from 'lodash'
 
 import { Application } from 'app/models/application'
 import { ApplicationService } from 'app/services/application.service'
+import { FeatureService } from 'app/services/feature.service'
 import { UrlService } from 'app/services/url.service'
 import { MarkerPopupComponent } from './marker-popup/marker-popup.component'
 
@@ -84,6 +85,7 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     private appRef: ApplicationRef,
     private elementRef: ElementRef,
     public applicationService: ApplicationService,
+    private featureService: FeatureService,
     public urlService: UrlService,
     private injector: Injector,
     private resolver: ComponentFactoryResolver,
@@ -557,9 +559,29 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   // called when user hovers over app marker - show polygons
   private onMarkerHover(app: Application) {
-    if (app && app.features && app.features.length > 0) {
-      this.renderPolygons(app)
+    if (!app) {
+      return
     }
+
+    // If features already loaded, render them
+    if (app.features && app.features.length > 0) {
+      this.renderPolygons(app)
+      return
+    }
+
+    // Otherwise load features first
+    this.featureService
+      .getByApplicationId(app._id)
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(
+        (features) => {
+          app.features = features
+          if (features && features.length > 0) {
+            this.renderPolygons(app)
+          }
+        },
+        (error) => console.error('Error loading features:', error)
+      )
   }
 
   // called when user moves cursor away from marker - hide polygons
