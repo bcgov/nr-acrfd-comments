@@ -1,10 +1,49 @@
-# Build static assets (SPA)
-FROM node:24-slim AS static
+# Build admin app
+FROM node:24-slim AS admin-build
 
-# Copy, build static files; see .dockerignore for exclusions
 WORKDIR /app
-COPY . ./
-RUN npm run deploy
+
+# Copy config files and dependencies
+COPY admin/package*.json ./
+COPY admin/angular.json ./
+COPY admin/tsconfig*.json ./
+
+# Copy source code
+COPY admin/src ./src
+COPY admin/e2e ./e2e
+
+# Install dependencies and build
+RUN npm install --legacy-peer-deps --ignore-scripts && \
+    ./node_modules/.bin/ng build nrts-prc-admin --prod --deploy-url=/admin/ --base-href=/admin/
+
+# Build public app
+FROM node:24-slim AS public-build
+
+WORKDIR /app
+
+# Copy config files and dependencies
+COPY public/package*.json ./
+COPY public/angular.json ./
+COPY public/tsconfig*.json ./
+
+# Copy source code
+COPY public/src ./src
+COPY public/assets ./assets
+COPY public/environments ./environments
+COPY public/e2e ./e2e
+COPY public/index.html ./
+COPY public/main.ts ./
+COPY public/polyfills.ts ./
+COPY public/styles.scss ./
+COPY public/test.ts ./
+COPY public/karma.conf.js ./
+COPY public/tsconfig.app.json ./
+COPY public/tsconfig.spec.json ./
+COPY public/typings.d.ts ./
+
+# Install dependencies and build
+RUN npm install --legacy-peer-deps --ignore-scripts && \
+    ./node_modules/.bin/ng build nrts-prc-public --prod
 
 # Build custom Caddy binary with Coraza WAF plugin
 FROM caddy:2.11.2-builder AS caddy
@@ -24,8 +63,11 @@ RUN apk add --no-cache ca-certificates
 # Copy custom Caddy binary (capabilities already stripped in caddy stage; satisfies KSV022)
 COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
 
-# Copy static files, Coraza config
-COPY --from=static /app/dist /srv
+# Copy built apps from build stages into appropriate directories for Caddy
+COPY --from=admin-build /app/dist /srv/admin
+COPY --from=public-build /app/dist /srv/public
+
+# Copy Caddyfile and Coraza config
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY coraza.conf /etc/caddy/coraza.conf
 
