@@ -65,6 +65,7 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private map: L.Map = null
   private markerList: L.Marker[] = [] // list of markers
   private currentMarker: L.Marker = null // for removing previous marker
+  private currentPolygonLayer: L.GeoJSON = null // for displaying feature polygons
   private markerClusterGroup = L.markerClusterGroup({
     showCoverageOnHover: false,
     maxClusterRadius: 40, // NB: change to 0 to disable clustering
@@ -354,6 +355,7 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   public ngOnDestroy() {
+    this.clearPolygons()
     if (this.map) {
       this.map.remove()
     }
@@ -446,6 +448,8 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
           this.markerList.splice(i, 1)
         }
       }
+      // clear polygons if they belong to this app
+      this.clearPolygons()
     })
 
     // draw added apps
@@ -474,6 +478,8 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
           const marker = L.marker(L.latLng(centroid[1], centroid[0]), { title: title })
             .setIcon(markerIcon)
             .on('click', L.Util.bind(this.onMarkerClick, this, app))
+            .on('mouseover', L.Util.bind(this.onMarkerHover, this, app))
+            .on('mouseout', L.Util.bind(this.onMarkerOut, this, app))
           marker.dispositionId = app.tantalisID
           this.markerList.push(marker) // save to list
           this.markerClusterGroup.addLayer(marker) // save to marker clusters group
@@ -537,6 +543,65 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     // bind popup to marker so it automatically closes when marker is removed
     marker.bindPopup(popup).openPopup()
+  }
+
+  // called when user hovers over app marker - show polygons
+  private onMarkerHover(...args: any[]) {
+    const app = args[0] as Application
+    if (app && app.features && app.features.length > 0) {
+      this.renderPolygons(app)
+    }
+  }
+
+  // called when user moves cursor away from marker - hide polygons
+  private onMarkerOut(...args: any[]) {
+    this.clearPolygons()
+  }
+
+  /**
+   * Render GeoJSON feature polygons on the map
+   */
+  private renderPolygons(app: Application) {
+    // clear any existing polygons
+    this.clearPolygons()
+
+    if (!app.features || app.features.length === 0) {
+      return
+    }
+
+    // create a GeoJSON layer from the features
+    const geoJsonFeatures = app.features.map((feature) => ({
+      type: 'Feature',
+      id: feature.applicationID,
+      geometry: feature.geometry,
+      properties: feature.properties,
+    }))
+
+    const featureCollection = {
+      type: 'FeatureCollection',
+      features: geoJsonFeatures,
+    }
+
+    // render the GeoJSON with styling
+    this.currentPolygonLayer = L.geoJSON(featureCollection, {
+      style: {
+        color: '#0066cc', // blue
+        weight: 2,
+        opacity: 0.8,
+        fillColor: '#0066cc',
+        fillOpacity: 0.2,
+      },
+    }).addTo(this.map)
+  }
+
+  /**
+   * Remove polygon layer from map
+   */
+  private clearPolygons() {
+    if (this.currentPolygonLayer) {
+      this.map.removeLayer(this.currentPolygonLayer)
+      this.currentPolygonLayer = null
+    }
   }
 
   /**
