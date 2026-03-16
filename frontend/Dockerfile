@@ -13,7 +13,7 @@ COPY admin/src ./src
 COPY admin/e2e ./e2e
 
 # Install dependencies and build
-RUN npm install --legacy-peer-deps --ignore-scripts && \
+RUN npm install --legacy-peer-deps && \
     ./node_modules/.bin/ng build nrts-prc-admin --prod --deploy-url=/admin/ --base-href=/admin/
 
 # Build public app
@@ -42,7 +42,7 @@ COPY public/tsconfig.spec.json ./
 COPY public/typings.d.ts ./
 
 # Install dependencies and build
-RUN npm install --legacy-peer-deps --ignore-scripts && \
+RUN npm install --legacy-peer-deps && \
     ./node_modules/.bin/ng build nrts-prc-public --prod
 
 # Build custom Caddy binary with Coraza WAF plugin
