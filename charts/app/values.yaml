@@ -25,7 +25,7 @@ global:
 #-- the components of the application, backend.
 backend:
   #-- enable or disable backend
-  enabled: false
+  enabled: true
   #-- the deployment strategy, can be "Recreate" or "RollingUpdate"
   deploymentStrategy: Recreate
   #-- autoscaling for the component. it is optional and is an object.
@@ -81,7 +81,7 @@ cronjob:
 
 frontend:
   # -- enable or disable a component deployment.
-  enabled: false
+  enabled: true
   # -- the deployment strategy, can be "Recreate" or "RollingUpdate"
   deploymentStrategy: Recreate
 
@@ -135,29 +135,29 @@ frontend:
 mongodb:
   #-- enable or disable MongoDB
   enabled: true
-  
+
   image:
     repository: mongo
-    tag: '3.6'
+    tag: '7.0'
     pullPolicy: IfNotPresent
-  
+
   imagePullSecrets: []
   nameOverride: ''
   fullnameOverride: 'mongodb-app'
-  
+
   secret:
     name: mongodb-secret
-  
+
   persistence:
     enabled: true
     existingClaim: mongodbdata
     mountPath: /data/db
-  
+
   service:
     name: mongodb
     type: ClusterIP
     port: 27017
-  
+
   resources:
     limits:
       cpu: '2'
@@ -165,7 +165,7 @@ mongodb:
     requests:
       cpu: 250m
       memory: 2Gi
-  
+
   readinessProbe:
     enabled: true
     tcpSocket:
@@ -175,7 +175,7 @@ mongodb:
     periodSeconds: 10
     successThreshold: 1
     failureThreshold: 3
-  
+
   livenessProbe:
     enabled: true
     tcpSocket:
@@ -185,17 +185,17 @@ mongodb:
     periodSeconds: 10
     successThreshold: 1
     failureThreshold: 3
-  
+
   nodeSelector: {}
   tolerations: []
   affinity: {}
-  
+
   securityContext: {}
     # OpenShift will automatically assign appropriate UID/GID
     # Do not set runAsUser or fsGroup - let OpenShift SCC handle it
-  
+
   podSecurityPolicy:
     enabled: false
     name: ''
-  
+
   debug: false
