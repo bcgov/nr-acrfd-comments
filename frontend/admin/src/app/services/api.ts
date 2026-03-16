@@ -690,7 +690,7 @@ export class ApiService {
     const filename = document.documentFileName
 
     if (this.isMS) {
-      (window.navigator as any).msSaveBlob(blob, filename)
+      ;(window.navigator as any).msSaveBlob(blob, filename)
     } else {
       const url = window.URL.createObjectURL(blob)
       const a = window.document.createElement('a')
@@ -709,7 +709,7 @@ export class ApiService {
     const filename = document.documentFileName
 
     if (this.isMS) {
-      (window.navigator as any).msSaveBlob(blob, filename)
+      ;(window.navigator as any).msSaveBlob(blob, filename)
     } else {
       const tab = window.open()
       const fileURL = URL.createObjectURL(blob)

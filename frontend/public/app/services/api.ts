@@ -105,8 +105,8 @@ export class ApiService {
     const reason = error.message
       ? error.message
       : error.status
-        ? `${error.status} - ${error.statusText}`
-        : 'Server error'
+      ? `${error.status} - ${error.statusText}`
+      : 'Server error'
     console.log('API error =', reason)
     return throwError(error)
   }
@@ -141,7 +141,9 @@ export class ApiService {
     if (params['appReasons']) {
       params['appReasons'].value.forEach(
         (reason: string) =>
-          (queryString += `reason[${params['appReasons'].modifier}]=${encodeURIComponent(reason)}&`),
+          (queryString += `reason[${params['appReasons'].modifier}]=${encodeURIComponent(
+            reason,
+          )}&`),
       )
     }
     if (params['applicant']) {
@@ -260,7 +262,9 @@ export class ApiService {
     if (params['appReasons']) {
       params['appReasons'].value.forEach(
         (reason: string) =>
-          (queryString += `reason[${params['appReasons'].modifier}]=${encodeURIComponent(reason)}&`),
+          (queryString += `reason[${params['appReasons'].modifier}]=${encodeURIComponent(
+            reason,
+          )}&`),
       )
     }
     if (params['applicant'] && params['applicant'].value) {
@@ -349,13 +353,17 @@ export class ApiService {
   //
   getFeaturesByTantalisId(tantalisID: number): Observable<Feature[]> {
     const fields = ['applicationID', 'geometry', 'properties', 'type']
-    const queryString = `feature?tantalisId=${tantalisID}&fields=${this.convertArrayIntoPipeString(fields)}`
+    const queryString = `feature?tantalisId=${tantalisID}&fields=${this.convertArrayIntoPipeString(
+      fields,
+    )}`
     return this.http.get<Feature[]>(`${this.apiPath}/${queryString}`)
   }
 
   getFeaturesByApplicationId(applicationId: string): Observable<Feature[]> {
     const fields = ['applicationID', 'geometry', 'properties', 'type']
-    const queryString = `feature?applicationId=${applicationId}&fields=${this.convertArrayIntoPipeString(fields)}`
+    const queryString = `feature?applicationId=${applicationId}&fields=${this.convertArrayIntoPipeString(
+      fields,
+    )}`
     return this.http.get<Feature[]>(`${this.apiPath}/${queryString}`)
   }
 
