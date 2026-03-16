@@ -1,5 +1,5 @@
 # Build admin app
-FROM node:24-slim AS admin-build
+FROM node:20-slim AS admin-build
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ RUN npm install --legacy-peer-deps && \
     ./node_modules/.bin/ng build nrts-prc-admin --prod --deploy-url=/admin/ --base-href=/admin/
 
 # Build public app
-FROM node:24-slim AS public-build
+FROM node:20-slim AS public-build
 
 WORKDIR /app
 
