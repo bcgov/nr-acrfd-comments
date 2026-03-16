@@ -11,7 +11,7 @@ import { LoadingService } from 'app/services/loading.service'
 export class HttpLoadingInterceptor implements HttpInterceptor {
   constructor(private loadingService: LoadingService) {}
 
-  intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+  intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // Skip spinner for health checks
     if (request.url.includes('/api/health') || request.url.includes('healthz')) {
       return next.handle(request)

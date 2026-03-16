@@ -1,11 +1,8 @@
 import { Component } from '@angular/core'
-import { CommonModule } from '@angular/common'
 import { LoadingService } from 'app/services/loading.service'
 
 @Component({
   selector: 'app-loading-spinner',
-  standalone: true,
-  imports: [CommonModule],
   template: `
     <div *ngIf="isLoading$ | async" class="spinner"></div>
   `,
