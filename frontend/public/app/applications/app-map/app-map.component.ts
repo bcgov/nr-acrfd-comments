@@ -479,7 +479,7 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
             .setIcon(markerIcon)
             .on('click', L.Util.bind(this.onMarkerClick, this, app))
             .on('mouseover', L.Util.bind(this.onMarkerHover, this, app))
-            .on('mouseout', L.Util.bind(this.onMarkerOut, this, app))
+            .on('mouseout', L.Util.bind(this.onMarkerOut, this))
           marker.dispositionId = app.tantalisID
           this.markerList.push(marker) // save to list
           this.markerClusterGroup.addLayer(marker) // save to marker clusters group
@@ -546,15 +546,14 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   // called when user hovers over app marker - show polygons
-  private onMarkerHover(...args: any[]) {
-    const app = args[0] as Application
+  private onMarkerHover(app: Application) {
     if (app && app.features && app.features.length > 0) {
       this.renderPolygons(app)
     }
   }
 
   // called when user moves cursor away from marker - hide polygons
-  private onMarkerOut(...args: any[]) {
+  private onMarkerOut() {
     this.clearPolygons()
   }
 
@@ -572,9 +571,8 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     // create a GeoJSON layer from the features
     const geoJsonFeatures = app.features.map((feature) => ({
       type: 'Feature',
-      id: feature.applicationID,
       geometry: feature.geometry,
-      properties: feature.properties,
+      properties: { ...feature.properties, applicationID: app._id },
     }))
 
     const featureCollection = {
