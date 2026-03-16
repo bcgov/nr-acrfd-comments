@@ -158,8 +158,8 @@ export class ApiService {
       this.pathAPI = `${window.location.origin}/api`
       this.env = 'test'
     } else if (/^nr-acrfd-comments-\d+\.apps\.silver\.devops\.gov\.bc\.ca$/.test(hostname)) {
-      // PR deployments: backend co-deployed on the same host
-      this.pathAPI = `https://nrts-prc-api-86cabb-dev.apps.silver.devops.gov.bc.ca/api`
+      // PR deployments: backend co-deployed on the same host via Caddy reverse proxy
+      this.pathAPI = `${window.location.origin}/api`
       this.env = 'dev'
     } else {
       // Prod

@@ -82,8 +82,8 @@ export class ApiService {
       this.adminUrl = `${window.location.origin}/admin/`
       this.env = 'test'
     } else if (/^nr-acrfd-comments-\d+\.apps\.silver\.devops\.gov\.bc\.ca$/.test(hostname)) {
-      // PR deployments: backend co-deployed on same host
-      this.apiPath = `https://nrts-prc-api-86cabb-dev.apps.silver.devops.gov.bc.ca/api/public`
+      // PR deployments: backend co-deployed on same host via Caddy reverse proxy
+      this.apiPath = `${window.location.origin}/api/public`
       this.adminUrl = `${window.location.origin}/admin/`
       this.env = 'dev'
     } else {
