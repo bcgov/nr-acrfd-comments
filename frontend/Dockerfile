@@ -3,6 +3,9 @@ FROM node:20-slim AS admin-build
 
 WORKDIR /app
 
+# Enable legacy OpenSSL provider for old Angular builds
+ENV NODE_OPTIONS=--openssl-legacy-provider
+
 # Copy config files and dependencies
 COPY admin/package*.json ./
 COPY admin/angular.json ./
@@ -20,6 +23,9 @@ RUN npm install --legacy-peer-deps && \
 FROM node:20-slim AS public-build
 
 WORKDIR /app
+
+# Enable legacy OpenSSL provider for old Angular builds
+ENV NODE_OPTIONS=--openssl-legacy-provider
 
 # Copy config files and dependencies
 COPY public/package*.json ./
