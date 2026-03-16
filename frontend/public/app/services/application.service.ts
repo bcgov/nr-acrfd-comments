@@ -212,12 +212,22 @@ export class ApplicationService {
     const queryParamSets = this.buildQueryParamSets(filters, coordinates)
 
     const observables: Array<Observable<number>> = queryParamSets.map((queryParamSet) =>
-      this.api.getCountApplications(queryParamSet).pipe(catchError(this.api.handleError)),
+      this.api.getCountApplications(queryParamSet).pipe(
+        catchError((error) => {
+          this.api.handleError(error)
+          return of(0)
+        }),
+      ),
     )
 
     return combineLatest(observables, (...args: number[]) =>
       args.reduce((sum, arg) => (sum += arg)),
-    ).pipe(catchError(this.api.handleError))
+    ).pipe(
+      catchError((error) => {
+        this.api.handleError(error)
+        return of(0)
+      }),
+    )
   }
 
   /**
@@ -246,9 +256,12 @@ export class ApplicationService {
         pageNum: { value: pageNum },
         pageSize: { value: pageSize },
       }
-      return this.api
-        .getApplications(queryParamSetWithPagination)
-        .pipe(catchError(this.api.handleError))
+      return this.api.getApplications(queryParamSetWithPagination).pipe(
+        catchError((error) => {
+          this.api.handleError(error)
+          return of([] as Application[])
+        }),
+      )
     })
 
     return combineLatest(...observables).pipe(
