@@ -96,6 +96,9 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     pass: db_password,
     serverSelectionTimeoutMS: 10000, // Give up initial connection after 10 seconds
     socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    maxPoolSize: 50, // Allow up to 50 concurrent connections to MongoDB
+    minPoolSize: 10, // Maintain at least 10 connections in pool
+    maxIdleTimeMS: 30000, // Remove connections idle for 30 seconds
   }
   const safeDbLog = db_username
     ? `mongodb://${db_username}:***@${dbHost}/${dbDatabase}?authSource=admin`
