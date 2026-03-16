@@ -580,7 +580,7 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
             this.renderPolygons(app)
           }
         },
-        (error) => console.error('Error loading features:', error)
+        (error) => console.error('Error loading features:', error),
       )
   }
 
