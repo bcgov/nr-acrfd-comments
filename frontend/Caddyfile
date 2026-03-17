@@ -19,6 +19,21 @@
 		`
 	}
 
+	# Proxy admin API requests to backend service (must be before /admin* to match first)
+	handle /admin/api* {
+		uri strip_prefix /admin
+		reverse_proxy {$BACKEND_URL} {
+			header_up Host {http.reverse_proxy.upstream.hostport}
+			header_up X-Real-IP {remote_host}
+			header_up -X-Forwarded-For
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {http.request.proto}
+			transport http {
+				dial_timeout 5s
+			}
+		}
+	}
+
 	# Serve admin app at /admin
 	handle /admin* {
 		uri strip_prefix /admin
@@ -32,21 +47,6 @@
 			}
 		}
 		rewrite @admin_spa {http.matchers.file.relative}
-	}
-
-	# Proxy admin API requests to backend service
-	handle /admin/api* {
-		uri strip_prefix /admin
-		reverse_proxy {$BACKEND_URL} {
-			header_up Host {http.reverse_proxy.upstream.hostport}
-			header_up X-Real-IP {remote_host}
-			header_up -X-Forwarded-For
-			header_up X-Forwarded-For {remote_host}
-			header_up X-Forwarded-Proto {http.request.proto}
-			transport http {
-				dial_timeout 5s
-			}
-		}
 	}
 
 	# Proxy API requests to backend service
