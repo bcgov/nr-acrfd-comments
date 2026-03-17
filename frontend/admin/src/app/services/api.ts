@@ -71,6 +71,7 @@ interface ILocalLoginResponse {
 interface IRefreshApplicationResponse {
   application: Application
   features: Feature[]
+  wasUpdated: boolean
 }
 
 /**
@@ -174,8 +175,8 @@ export class ApiService {
         ? `${error.message} - ${error.error.message}`
         : error.message
       : error.status
-        ? `${error.status} - ${error.statusText}`
-        : 'Server error'
+      ? `${error.status} - ${error.statusText}`
+      : 'Server error'
     console.log('API error =', reason)
     return throwError(error)
   }
@@ -280,7 +281,9 @@ export class ApiService {
       'tenureStage',
       'type',
     ]
-    const queryString = `application/${id}?isDeleted=false&fields=${this.convertArrayIntoPipeString(fields)}`
+    const queryString = `application/${id}?isDeleted=false&fields=${this.convertArrayIntoPipeString(
+      fields,
+    )}`
     return this.http.get<Application[]>(`${this.pathAPI}/${queryString}`, {})
   }
 
@@ -330,7 +333,9 @@ export class ApiService {
       'tenureStage',
       'type',
     ]
-    const queryString = `application?isDeleted=false&cl_file=${clid}&fields=${this.convertArrayIntoPipeString(fields)}`
+    const queryString = `application?isDeleted=false&cl_file=${clid}&fields=${this.convertArrayIntoPipeString(
+      fields,
+    )}`
     return this.http.get<Application[]>(`${this.pathAPI}/${queryString}`, {})
   }
 
@@ -437,7 +442,9 @@ export class ApiService {
 
   getDecisionsByApplicationId(appId: string): Observable<Decision[]> {
     const fields = ['_addedBy', '_application', 'description']
-    const queryString = `decision?_application=${appId}&fields=${this.convertArrayIntoPipeString(fields)}`
+    const queryString = `decision?_application=${appId}&fields=${this.convertArrayIntoPipeString(
+      fields,
+    )}`
     return this.http.get<Decision[]>(`${this.pathAPI}/${queryString}`, {})
   }
 
