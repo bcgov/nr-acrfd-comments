@@ -1,8 +1,8 @@
-import { HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { KeycloakService } from 'app/services/keycloak.service';
-import { Observable, Subject, throwError } from 'rxjs';
-import { catchError, switchMap, tap } from 'rxjs/operators';
+import { HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http'
+import { Injectable } from '@angular/core'
+import { KeycloakService } from 'app/services/keycloak.service'
+import { Observable, Subject, throwError } from 'rxjs'
+import { catchError, switchMap, tap } from 'rxjs/operators'
 
 /**
  * Intercepts all http requests and allows for the request and/or response to be manipulated.
@@ -13,10 +13,10 @@ import { catchError, switchMap, tap } from 'rxjs/operators';
  */
 @Injectable()
 export class TokenInterceptor implements HttpInterceptor {
-  private refreshTokenInProgress = false;
+  private refreshTokenInProgress = false
 
-  private tokenRefreshedSource = new Subject();
-  private tokenRefreshed$ = this.tokenRefreshedSource.asObservable();
+  private tokenRefreshedSource = new Subject()
+  private tokenRefreshed$ = this.tokenRefreshedSource.asObservable()
 
   constructor(private auth: KeycloakService) {}
 
@@ -31,24 +31,24 @@ export class TokenInterceptor implements HttpInterceptor {
    * @memberof TokenInterceptor
    */
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<any> {
-    request = this.addAuthHeader(request);
+    request = this.addAuthHeader(request)
 
     return next.handle(request).pipe(
-      catchError(error => {
+      catchError((error) => {
         if (error.status === 403) {
           return this.refreshToken().pipe(
             switchMap(() => {
-              request = this.addAuthHeader(request);
-              return next.handle(request);
+              request = this.addAuthHeader(request)
+              return next.handle(request)
             }),
-            catchError(err => {
-              return throwError(err);
-            })
-          );
+            catchError((err) => {
+              return throwError(err)
+            }),
+          )
         }
-        return throwError(error);
-      })
-    );
+        return throwError(error)
+      }),
+    )
   }
 
   /**
@@ -60,13 +60,15 @@ export class TokenInterceptor implements HttpInterceptor {
    * @memberof TokenInterceptor
    */
   private addAuthHeader(request: HttpRequest<any>): HttpRequest<any> {
-    const authToken: string = this.auth.getToken() || '';
+    const authToken: string = this.auth.getToken()
 
-    request = request.clone({
-      setHeaders: { Authorization: 'Bearer ' + authToken }
-    });
+    if (authToken) {
+      request = request.clone({
+        setHeaders: { Authorization: 'Bearer ' + authToken },
+      })
+    }
 
-    return request;
+    return request
   }
 
   /**
@@ -78,21 +80,21 @@ export class TokenInterceptor implements HttpInterceptor {
    */
   private refreshToken(): Observable<any> {
     if (this.refreshTokenInProgress) {
-      return new Observable(observer => {
+      return new Observable((observer) => {
         this.tokenRefreshed$.subscribe(() => {
-          observer.next();
-          observer.complete();
-        });
-      });
+          observer.next()
+          observer.complete()
+        })
+      })
     } else {
-      this.refreshTokenInProgress = true;
+      this.refreshTokenInProgress = true
 
       return this.auth.refreshToken().pipe(
         tap(() => {
-          this.refreshTokenInProgress = false;
-          this.tokenRefreshedSource.next();
-        })
-      );
+          this.refreshTokenInProgress = false
+          this.tokenRefreshedSource.next()
+        }),
+      )
     }
   }
 }

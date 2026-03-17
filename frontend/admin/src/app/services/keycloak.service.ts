@@ -218,6 +218,17 @@ export class KeycloakService {
       return currentUser ? currentUser.token : null
     }
 
+    // Safety check: ensure keycloakAuth is initialized and has getToken method
+    if (!this.keycloakAuth) {
+      console.warn('Keycloak service not initialized yet')
+      return null
+    }
+
+    if (typeof this.keycloakAuth.getToken !== 'function') {
+      console.warn('Keycloak getToken is not a function. Keycloak may not be fully initialized.')
+      return null
+    }
+
     return this.keycloakAuth.getToken()
   }
 
@@ -230,6 +241,12 @@ export class KeycloakService {
    */
   refreshToken(): Observable<any> {
     return new Observable((observer) => {
+      if (!this.keycloakAuth || typeof this.keycloakAuth.updateToken !== 'function') {
+        console.warn('Keycloak not initialized for token refresh')
+        observer.error('Keycloak not initialized')
+        return
+      }
+
       this.keycloakAuth
         .updateToken(30)
         .then((refreshed) => {
@@ -239,7 +256,7 @@ export class KeycloakService {
         })
         .catch((err) => {
           console.log('KC refresh error:', err)
-          observer.error()
+          observer.error(err)
         })
 
       return { unsubscribe() {} }
