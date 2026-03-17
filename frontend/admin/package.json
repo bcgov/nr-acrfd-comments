@@ -44,7 +44,7 @@
     "file-saver": "2.0.2",
     "hammerjs": "2.0.8",
     "json2csv": "4.5.3",
-    "keycloak-js": "~16.0.0",
+    "keycloak-js": "^18.0.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "jszip": "^3.10.1",
