@@ -3,8 +3,6 @@ import { JwtUtil } from 'app/jwt-util'
 import { Observable } from 'rxjs'
 import * as _ from 'lodash'
 
-declare var Keycloak: any;
-
 @Injectable()
 export class KeycloakService {
   private keycloakAuth: any
