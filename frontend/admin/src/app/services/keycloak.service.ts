@@ -37,7 +37,9 @@ export class KeycloakService {
     } else if (
       origin === 'https://nrts-prc-test.pathfinder.gov.bc.ca' ||
       origin === 'https://acrfd-86cabb-test.apps.silver.devops.gov.bc.ca' ||
-      origin === 'https://nr-acrfd-comments-test.apps.silver.devops.gov.bc.ca'
+      origin === 'https://nr-acrfd-comments-test.apps.silver.devops.gov.bc.ca' ||
+      // Test PR deployments
+      /^https:\/\/nr-acrfd-comments-\d+-test\.apps\.silver\.devops\.gov\.bc\.ca$/.test(origin)
     ) {
       // Test
       this.keycloakEnabled = true
@@ -78,77 +80,119 @@ export class KeycloakService {
       // Bootup KC
       this.keycloakEnabled = true
       return new Promise<void>((resolve, reject) => {
-        const config = {
-          url: this.keycloakUrl,
-          realm: this.keycloakRealm,
-          clientId: 'acrfd-4192',
-        }
-
-        // console.log('KC Auth init.');
-
-        this.keycloakAuth = new Keycloak(config)
-        this.keycloakAuth.onAuthSuccess = () => {
-          // console.log('onAuthSuccess');
-        }
-
-        this.keycloakAuth.onAuthError = () => {
-          console.log('onAuthError')
-        }
-
-        this.keycloakAuth.onAuthRefreshSuccess = () => {
-          // console.log('onAuthRefreshSuccess');
-        }
-
-        this.keycloakAuth.onAuthRefreshError = () => {
-          console.log('onAuthRefreshError')
-        }
-
-        this.keycloakAuth.onAuthLogout = () => {
-          // console.log('onAuthLogout');
-        }
-
-        // Try to get refresh tokens in the background
-        this.keycloakAuth.onTokenExpired = () => {
-          this.keycloakAuth
-            .updateToken()
-            .then((refreshed) => {
-              console.log('KC refreshed token?:', refreshed)
-            })
+        // Check if Keycloak library is loaded
+        if (typeof (window as any).Keycloak === 'undefined') {
+          console.error('Keycloak library not loaded. Attempting dynamic load...')
+          this.loadKeycloakLibrary()
+            .then(() => this.initializeKeycloak(resolve, reject))
             .catch((err) => {
-              console.log('KC refresh error:', err)
+              console.error('Failed to load Keycloak library:', err)
+              reject(err)
             })
+        } else {
+          this.initializeKeycloak(resolve, reject)
         }
-
-        // Initialize.
-
-        const initOptions = {
-          checkLoginIframe: false,
-          pkceMethod: 'S256',
-          onLoad: 'login-required',
-        }
-
-        this.keycloakAuth
-          .init(initOptions)
-          .then((auth) => {
-            // console.log('KC Refresh Success?:', this.keycloakAuth.authServerUrl);
-            console.log('KC Success:', auth)
-            if (!auth) {
-              if (this.loggedOut === 'true') {
-                // Don't do anything, they wanted to remain logged out.
-                resolve()
-              } else {
-                this.keycloakAuth.login({ idpHint: 'idir' })
-              }
-            } else {
-              resolve()
-            }
-          })
-          .catch((err) => {
-            console.log('KC error:', err)
-            reject()
-          })
       })
+    } else {
+      return Promise.resolve()
     }
+  }
+
+  private loadKeycloakLibrary(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = 'node_modules/keycloak-js/dist/keycloak.js'
+      script.onload = () => {
+        console.log('Keycloak library loaded successfully')
+        resolve()
+      }
+      script.onerror = () => {
+        console.error('Failed to load keycloak.js script')
+        reject(new Error('Failed to load keycloak.js'))
+      }
+      document.head.appendChild(script)
+    })
+  }
+
+  private initializeKeycloak(resolve, reject) {
+    const config = {
+      url: this.keycloakUrl,
+      realm: this.keycloakRealm,
+      clientId: 'acrfd-4192',
+    }
+
+    console.log('Initializing Keycloak with config:', config)
+
+    try {
+      this.keycloakAuth = new (window as any).Keycloak(config)
+    } catch (e) {
+      console.error('Failed to instantiate Keycloak:', e)
+      reject(e)
+      return
+    }
+
+    this.keycloakAuth.onAuthSuccess = () => {
+      console.log('Keycloak auth success')
+    }
+
+    this.keycloakAuth.onAuthError = () => {
+      console.log('Keycloak auth error')
+    }
+
+    this.keycloakAuth.onAuthRefreshSuccess = () => {
+      console.log('Keycloak token refresh success')
+    }
+
+    this.keycloakAuth.onAuthRefreshError = () => {
+      console.log('Keycloak token refresh error')
+    }
+
+    this.keycloakAuth.onAuthLogout = () => {
+      console.log('Keycloak logout')
+    }
+
+    // Try to get refresh tokens in the background
+    this.keycloakAuth.onTokenExpired = () => {
+      this.keycloakAuth
+        .updateToken()
+        .then((refreshed) => {
+          console.log('KC refreshed token?:', refreshed)
+        })
+        .catch((err) => {
+          console.log('KC refresh error:', err)
+        })
+    }
+
+    const initOptions = {
+      checkLoginIframe: false,
+      pkceMethod: 'S256',
+      onLoad: 'login-required',
+    }
+
+    console.log('Calling Keycloak.init() with options:', initOptions)
+
+    this.keycloakAuth
+      .init(initOptions)
+      .then((auth) => {
+        console.log('KC init success, authenticated:', auth)
+        if (!auth) {
+          if (this.loggedOut === 'true') {
+            // Don't do anything, they wanted to remain logged out.
+            console.log('User logged out, not redirecting')
+            resolve()
+          } else {
+            console.log('Not authenticated, redirecting to login with IDIR hint')
+            this.keycloakAuth.login({ idpHint: 'idir' })
+          }
+        } else {
+          console.log('User already authenticated')
+          resolve()
+        }
+      })
+      .catch((err) => {
+        console.error('KC init error:', err)
+        reject(err)
+      })
   }
 
   isValidForSite() {

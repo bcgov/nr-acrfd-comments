@@ -42,6 +42,19 @@
 		file_server
 		@admin_spa {
 			not path /api*
+			not path *.js
+			not path *.css
+			not path *.png
+			not path *.jpg
+			not path *.jpeg
+			not path *.gif
+			not path *.svg
+			not path *.woff
+			not path *.woff2
+			not path *.ttf
+			not path *.eot
+			not path *.map
+			not path *.ico
 			file {
 				try_files {path} /index.html
 			}
@@ -70,6 +83,19 @@
 		file_server
 		@spa_router {
 			not path /api*
+			not path *.js
+			not path *.css
+			not path *.png
+			not path *.jpg
+			not path *.jpeg
+			not path *.gif
+			not path *.svg
+			not path *.woff
+			not path *.woff2
+			not path *.ttf
+			not path *.eot
+			not path *.map
+			not path *.ico
 			file {
 				try_files {path} /index.html
 			}
