@@ -218,7 +218,7 @@ export class KeycloakService {
       return currentUser ? currentUser.token : null
     }
 
-    return this.keycloakAuth.token
+    return this.keycloakAuth.getToken()
   }
 
   /**
