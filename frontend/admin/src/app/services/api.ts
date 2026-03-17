@@ -158,8 +158,8 @@ export class ApiService {
       this.pathAPI = `${window.location.origin}/api`
       this.env = 'test'
     } else if (/^nr-acrfd-comments-\d+\.apps\.silver\.devops\.gov\.bc\.ca$/.test(hostname)) {
-      // PR deployments: backend co-deployed on the same host
-      this.pathAPI = `https://nrts-prc-api-86cabb-dev.apps.silver.devops.gov.bc.ca/api`
+      // PR deployments: backend co-deployed on the same host via Caddy reverse proxy
+      this.pathAPI = `${window.location.origin}/api`
       this.env = 'dev'
     } else {
       // Prod
@@ -690,7 +690,7 @@ export class ApiService {
     const filename = document.documentFileName
 
     if (this.isMS) {
-      (window.navigator as any).msSaveBlob(blob, filename)
+      ;(window.navigator as any).msSaveBlob(blob, filename)
     } else {
       const url = window.URL.createObjectURL(blob)
       const a = window.document.createElement('a')
@@ -709,7 +709,7 @@ export class ApiService {
     const filename = document.documentFileName
 
     if (this.isMS) {
-      (window.navigator as any).msSaveBlob(blob, filename)
+      ;(window.navigator as any).msSaveBlob(blob, filename)
     } else {
       const tab = window.open()
       const fileURL = URL.createObjectURL(blob)

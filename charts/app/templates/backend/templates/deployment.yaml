@@ -27,6 +27,34 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+      initContainers:
+        - name: wait-for-mongodb
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Waiting for MongoDB to be ready at {{ .Values.mongodb.service.name | default "mongodb" }}:{{ .Values.mongodb.service.port | default 27017 }}..."
+              for i in $(seq 1 60); do
+                if mongosh --authenticationDatabase=admin -u "$MONGODB_USERNAME" -p "$MONGODB_PASSWORD" mongodb://{{ .Values.mongodb.service.name | default "mongodb" }}:{{ .Values.mongodb.service.port | default 27017 }} --eval "db.adminCommand({ping: 1})" 2>/dev/null | grep -q '{ ok: 1 }'; then
+                  echo "✅ MongoDB is ready"
+                  exit 0
+                fi
+                echo "Attempt $i: MongoDB not ready yet, retrying..."
+                sleep 5
+              done
+              echo "❌ MongoDB failed to become ready after 5 minutes"
+              exit 1
+          env:
+            - name: MONGODB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongodb-username
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongodb-password
       containers:
         - name: {{ include "backend.fullname" . }}
           securityContext:
@@ -35,12 +63,26 @@ spec:
             allowPrivilegeEscalation: false
           image: "{{ .Values.global.registry | default "ghcr.io" }}/{{.Values.global.repository}}/backend:{{ .Values.global.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ default "Always" .Values.backend.imagePullPolicy }}
-          envFrom:
-            - secretRef:
-                name: mongodb-secret
           env:
+            - name: MONGODB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongodb-username
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongodb-password
+            - name: MONGODB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongodb-database
             - name: LOG_LEVEL
               value: info
+            - name: MONGODB_SERVICE_HOST
+              value: "{{ .Values.mongodb.service.name | default "mongodb" }}"
           ports:
             - name: http
               containerPort: {{ .Values.backend.service.targetPort }}

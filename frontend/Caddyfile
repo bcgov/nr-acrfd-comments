@@ -1,0 +1,82 @@
+# Listen only on high ports (3000, 3001, 3003).
+{
+	metrics
+	auto_https off
+	admin 0.0.0.0:3003
+	order coraza_waf first
+}
+:3000 {
+	log {
+		output stdout
+		format console
+		level {$LOG_LEVEL}
+	}
+
+	# Enable Coraza WAF
+	coraza_waf {
+		directives `
+		Include /etc/caddy/coraza.conf
+		`
+	}
+
+	# Serve admin app at /admin
+	handle /admin* {
+		root * /srv/admin
+		encode zstd gzip
+		file_server
+		@admin_spa {
+			not path /admin/api*
+			file {
+				try_files {path} /index.html
+			}
+		}
+		rewrite @admin_spa {http.matchers.file.relative}
+	}
+
+	# Proxy API requests to backend service
+	handle /api* {
+		reverse_proxy {$BACKEND_URL} {
+			header_up Host {http.reverse_proxy.upstream.hostport}
+			header_up X-Real-IP {remote_host}
+			header_up -X-Forwarded-For
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {http.request.proto}
+			transport http {
+				dial_timeout 5s
+			}
+		}
+	}
+
+	# Serve public app at root
+	handle {
+		root * /srv/public
+		encode zstd gzip
+		file_server
+		@spa_router {
+			not path /api*
+			file {
+				try_files {path} /index.html
+			}
+		}
+		rewrite @spa_router {http.matchers.file.relative}
+	}
+
+	header {
+		-Server
+		X-Frame-Options "SAMEORIGIN"
+		X-XSS-Protection "1;mode=block"
+		Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate"
+		X-Content-Type-Options "nosniff"
+		Strict-Transport-Security "max-age=31536000"
+		Content-Security-Policy "default-src 'self' https://*.gov.bc.ca; script-src 'self' https://*.gov.bc.ca https://www.googletagmanager.com https://www.google-analytics.com https://use.typekit.net 'sha256-FqXm3XGP9gc+3N46gcvvnaMJb6JEPhB/WwY67U3nx7c=' 'sha256-RDsAWAiR04a5CNY/1S2bQGPm5+DNd93uIJVFU/trlQM=' 'sha256-ieoeWczDHkReVBsRBqaal5AFMlBtNjMzgwKvLqi/tSU='; style-src 'self' https://fonts.googleapis.com https://use.fontawesome.com https://use.typekit.net 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://use.typekit.net; img-src 'self' data: https://fonts.googleapis.com https://www.w3.org https://*.gov.bc.ca https://*.tile.openstreetmap.org https://server.arcgisonline.com https://p.typekit.net; frame-ancestors 'self'; form-action 'self'; block-all-mixed-content; connect-src 'self' https://*.gov.bc.ca wss://*.gov.bc.ca https://server.arcgisonline.com https://www.googletagmanager.com https://www.google-analytics.com;"
+		Referrer-Policy "same-origin"
+		Permissions-Policy "fullscreen=(self), camera=(), microphone=()"
+		Cross-Origin-Resource-Policy "cross-origin"
+		Cross-Origin-Opener-Policy "same-origin"
+	}
+}
+:3001 {
+	handle /health {
+		respond "OK"
+	}
+}

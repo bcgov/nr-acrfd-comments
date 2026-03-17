@@ -20,6 +20,7 @@ import * as _ from 'lodash'
 
 import { Application } from 'app/models/application'
 import { ApplicationService } from 'app/services/application.service'
+import { FeatureService } from 'app/services/feature.service'
 import { UrlService } from 'app/services/url.service'
 import { MarkerPopupComponent } from './marker-popup/marker-popup.component'
 
@@ -65,6 +66,7 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private map: L.Map = null
   private markerList: L.Marker[] = [] // list of markers
   private currentMarker: L.Marker = null // for removing previous marker
+  private currentPolygonLayer: L.GeoJSON = null // for displaying feature polygons
   private markerClusterGroup = L.markerClusterGroup({
     showCoverageOnHover: false,
     maxClusterRadius: 40, // NB: change to 0 to disable clustering
@@ -75,6 +77,7 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private doNotify = true // whether to emit notification
   private ngUnsubscribe: Subject<boolean> = new Subject<boolean>()
   private mapBaseLayerName = 'World Topographic'
+  private moveendDebounceTimer: any = null // debounce timer for map move events
 
   readonly defaultBounds = L.latLngBounds([48, -139], [60, -114]) // all of BC
 
@@ -82,6 +85,7 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     private appRef: ApplicationRef,
     private elementRef: ElementRef,
     public applicationService: ApplicationService,
+    private featureService: FeatureService,
     public urlService: UrlService,
     private injector: Injector,
     private resolver: ComponentFactoryResolver,
@@ -223,15 +227,20 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.map.on('moveend', () => {
       // console.log('moveend');
 
-      // notify applications component of updated coordinates
-      // const newZoom = this.map.getZoom();
-      // const doEmit = newZoom <= this.oldZoom; // ignore zooming in
-      // this.oldZoom = newZoom;
-      // if (doEmit) { this.emitCoordinates(); }
-      if (this.isMapReady && this.doNotify) {
-        this.emitCoordinates()
+      // Debounce coordinate updates to avoid hammering backend with requests
+      // Clear any pending timer
+      if (this.moveendDebounceTimer) {
+        clearTimeout(this.moveendDebounceTimer)
       }
-      this.doNotify = true // reset for next time
+
+      // Set new timer - only emit coordinates after 500ms of no movement
+      this.moveendDebounceTimer = setTimeout(() => {
+        if (this.isMapReady && this.doNotify) {
+          this.emitCoordinates()
+        }
+        this.doNotify = true // reset for next time
+        this.moveendDebounceTimer = null
+      }, 500)
 
       // FUTURE
       // // save map state
@@ -354,6 +363,11 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   public ngOnDestroy() {
+    this.clearPolygons()
+    // Clear any pending moveend timer
+    if (this.moveendDebounceTimer) {
+      clearTimeout(this.moveendDebounceTimer)
+    }
     if (this.map) {
       this.map.remove()
     }
@@ -446,6 +460,8 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
           this.markerList.splice(i, 1)
         }
       }
+      // clear polygons if they belong to this app
+      this.clearPolygons()
     })
 
     // draw added apps
@@ -474,6 +490,8 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
           const marker = L.marker(L.latLng(centroid[1], centroid[0]), { title: title })
             .setIcon(markerIcon)
             .on('click', L.Util.bind(this.onMarkerClick, this, app))
+            .on('mouseover', L.Util.bind(this.onMarkerHover, this, app))
+            .on('mouseout', L.Util.bind(this.onMarkerOut, this))
           marker.dispositionId = app.tantalisID
           this.markerList.push(marker) // save to list
           this.markerClusterGroup.addLayer(marker) // save to marker clusters group
@@ -537,6 +555,83 @@ export class AppMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     // bind popup to marker so it automatically closes when marker is removed
     marker.bindPopup(popup).openPopup()
+  }
+
+  // called when user hovers over app marker - show polygons
+  private onMarkerHover(app: Application) {
+    if (!app) {
+      return
+    }
+
+    // If features already loaded, render them
+    if (app.features && app.features.length > 0) {
+      this.renderPolygons(app)
+      return
+    }
+
+    // Otherwise load features first
+    this.featureService
+      .getByApplicationId(app._id)
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(
+        (features) => {
+          app.features = features
+          if (features && features.length > 0) {
+            this.renderPolygons(app)
+          }
+        },
+        (error) => console.error('Error loading features:', error),
+      )
+  }
+
+  // called when user moves cursor away from marker - hide polygons
+  private onMarkerOut() {
+    this.clearPolygons()
+  }
+
+  /**
+   * Render GeoJSON feature polygons on the map
+   */
+  private renderPolygons(app: Application) {
+    // clear any existing polygons
+    this.clearPolygons()
+
+    if (!app.features || app.features.length === 0) {
+      return
+    }
+
+    // create a GeoJSON layer from the features
+    const geoJsonFeatures = app.features.map((feature) => ({
+      type: 'Feature',
+      geometry: feature.geometry,
+      properties: { ...feature.properties, applicationID: app._id },
+    }))
+
+    const featureCollection = {
+      type: 'FeatureCollection',
+      features: geoJsonFeatures,
+    }
+
+    // render the GeoJSON with styling
+    this.currentPolygonLayer = L.geoJSON(featureCollection, {
+      style: {
+        color: '#0066cc', // blue
+        weight: 2,
+        opacity: 0.8,
+        fillColor: '#0066cc',
+        fillOpacity: 0.2,
+      },
+    }).addTo(this.map)
+  }
+
+  /**
+   * Remove polygon layer from map
+   */
+  private clearPolygons() {
+    if (this.currentPolygonLayer) {
+      this.map.removeLayer(this.currentPolygonLayer)
+      this.currentPolygonLayer = null
+    }
   }
 
   /**

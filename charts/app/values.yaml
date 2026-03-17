@@ -3,11 +3,11 @@
 #-- global variables, can be accessed by sub-charts.
 global:
   #-- the registry where the images are stored. override during runtime for other registry at global level or individual level.
-  repository: ~ # provide the repo name from where images will be sourced for example bcgo
+  repository: bcgov/nr-acrfd-comments
   #-- the registry where the images are stored. override during runtime for other registry at global level or individual level. default is ghcr.io
   registry: ghcr.io # ghcr.io for directly streaming from github container registry or "artifacts.developer.gov.bc.ca/github-docker-remote" for artifactory, or any other registry. Templates use default "ghcr.io" as fallback if overridden to null.
   #-- the tag of the image, it can be latest, 1.0.0 etc..., or the sha256 hash
-  tag: ~
+  tag: latest
   #-- turn off autoscaling for the entire suite by setting this to false. default is true.
   autoscaling: false
   #-- global secrets, can be accessed by sub-charts.
@@ -123,10 +123,79 @@ frontend:
       haproxy.router.openshift.io/balance: 'roundrobin'
       route.openshift.io/termination: 'edge'
       haproxy.router.openshift.io/rate-limit-connections: 'true'
-      haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp: '10'
-      haproxy.router.openshift.io/rate-limit-connections.rate-http: '20'
-      haproxy.router.openshift.io/rate-limit-connections.rate-tcp: '50'
+      haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp: '50'
+      haproxy.router.openshift.io/rate-limit-connections.rate-http: '100'
+      haproxy.router.openshift.io/rate-limit-connections.rate-tcp: '100'
       haproxy.router.openshift.io/disable_cookies: 'true'
   pdb:
     enabled: false # enable it in PRODUCTION for having pod disruption budget.
     minAvailable: 1 # the minimum number of pods that must be available during the disruption budget.
+
+# MongoDB configuration
+mongodb:
+  #-- enable or disable MongoDB
+  enabled: true
+
+  image:
+    repository: mongo
+    tag: '7.0'
+    pullPolicy: IfNotPresent
+
+  imagePullSecrets: []
+  nameOverride: ''
+  fullnameOverride: 'mongodb-app'
+
+  secret:
+    name: mongodb-secret
+
+  persistence:
+    enabled: true
+    existingClaim: mongodbdata
+    mountPath: /data/db
+
+  service:
+    name: mongodb
+    type: ClusterIP
+    port: 27017
+
+  resources:
+    limits:
+      cpu: '2'
+      memory: 4Gi
+    requests:
+      cpu: 250m
+      memory: 2Gi
+
+  readinessProbe:
+    enabled: true
+    tcpSocket:
+      port: 27017
+    initialDelaySeconds: 60
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+
+  livenessProbe:
+    enabled: true
+    tcpSocket:
+      port: 27017
+    initialDelaySeconds: 30
+    timeoutSeconds: 1
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+  securityContext: {}
+    # OpenShift will automatically assign appropriate UID/GID
+    # Do not set runAsUser or fsGroup - let OpenShift SCC handle it
+
+  podSecurityPolicy:
+    enabled: false
+    name: ''
+
+  debug: false
