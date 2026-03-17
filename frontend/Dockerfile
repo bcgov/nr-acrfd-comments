@@ -1,70 +1,98 @@
 # Build admin app
-FROM node:16-alpine AS admin-build
+FROM node:20-slim AS admin-build
 
 WORKDIR /app
 
-WORKDIR /app
+# Enable legacy OpenSSL provider for old Angular builds
+ENV NODE_OPTIONS=--openssl-legacy-provider
 
-# Copy config files FIRST before npm install
+# Copy config files and dependencies
+COPY admin/package*.json ./
 COPY admin/angular.json ./
 COPY admin/tsconfig*.json ./
-COPY admin/package*.json ./
 
 # Copy source code
 COPY admin/src ./src
 COPY admin/e2e ./e2e
 
-# Install dependencies - skip postinstall scripts, build Angular directly  
-RUN npm install --legacy-peer-deps --ignore-scripts && \
+# Install dependencies and build
+RUN npm install --legacy-peer-deps && \
     ./node_modules/.bin/ng build nrts-prc-admin --prod --deploy-url=/admin/ --base-href=/admin/
 
 # Build public app
-FROM node:16-alpine AS public-build
+FROM node:20-slim AS public-build
 
 WORKDIR /app
 
-WORKDIR /app
+# Enable legacy OpenSSL provider for old Angular builds
+ENV NODE_OPTIONS=--openssl-legacy-provider
 
-# Copy config files FIRST before npm install
+# Copy config files and dependencies
+COPY public/package*.json ./
 COPY public/angular.json ./
 COPY public/tsconfig*.json ./
-COPY public/package*.json ./
 
-# Copy source code into src/ folder (angular.json expects sourceRoot: "src")
+# Copy source code into src/ directory structure (as expected by Angular)
 COPY public/app ./src/app
 COPY public/assets ./src/assets
 COPY public/environments ./src/environments
 COPY public/e2e ./e2e
-COPY public/*.ts ./src/
-COPY public/*.scss ./src/
-COPY public/*.html ./src/
-COPY public/*.ico ./src/
+COPY public/index.html ./src/
+COPY public/main.ts ./src/
+COPY public/polyfills.ts ./src/
+COPY public/styles.scss ./src/
+COPY public/test.ts ./src/
 COPY public/karma.conf.js ./src/
 COPY public/tsconfig.app.json ./src/
 COPY public/tsconfig.spec.json ./src/
+COPY public/typings.d.ts ./src/
 
-# Install dependencies - skip postinstall scripts and linting, build Angular directly
-RUN npm install --legacy-peer-deps --ignore-scripts && \
+# Install dependencies and build
+RUN npm install --legacy-peer-deps && \
     ./node_modules/.bin/ng build nrts-prc-public --prod
 
-# Runtime: serve both Angular apps with http-server
-FROM node:22-alpine
+# Build custom Caddy binary with Coraza WAF plugin
+FROM caddy:2.11.2-builder AS caddy
+# Install CA certificates for Go module downloads; libcap for setcap
+RUN apk add --no-cache ca-certificates libcap
+RUN xcaddy build \
+    --with github.com/corazawaf/coraza-caddy/v2
+# Strip file capabilities here so the final image does not need libcap
+RUN setcap -r /usr/bin/caddy
 
-ENV NODE_ENV=production
+# Deploy: use Alpine (not caddy:2.10.2-alpine) because we use our own custom Caddy
+# binary from the caddy stage—we never use the Caddy image's binary. Plain Alpine
+# keeps dependencies explicit and avoids coupling to the Caddy image's layout.
+FROM alpine:3.23.3
+RUN apk add --no-cache ca-certificates
 
-WORKDIR /app
+# Copy custom Caddy binary (capabilities already stripped in caddy stage; satisfies KSV022)
+COPY --from=caddy /usr/bin/caddy /usr/bin/caddy
 
-RUN npm install -g http-server
+# Copy built apps from build stages into appropriate directories for Caddy
+COPY --from=admin-build /app/dist /srv/admin
+COPY --from=public-build /app/dist /srv/public
 
-# Copy built apps from build stages
-COPY --from=admin-build /app/dist ./dist/admin
-COPY --from=public-build /app/dist ./dist/public
+# Copy Caddyfile and Coraza config
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY coraza.conf /etc/caddy/coraza.conf
 
-EXPOSE 3000
+# Set permissions for static files (OpenShift-compatible)
+# OpenShift uses random UIDs but assigns them to root group (GID 0)
+RUN chown -R 1001:0 /srv && \
+    chmod -R 755 /srv
 
-# Health check will be defined in docker-compose.yml
-# (not executable commands in runtime container)
+# Create directories for Coraza WAF with restricted permissions
+RUN mkdir -p /tmp/coraza && \
+    chown -R 1001:0 /tmp/coraza && \
+    chmod -R 770 /tmp/coraza
 
-# Start both apps on different ports
-# Serve dist directory on port 4200 so /admin/* maps to dist/admin/*
-CMD ["sh", "-c", "http-server dist -p 4200 -c-1 -s & http-server dist/public -p 3000 -c-1 -s"]
+RUN /usr/bin/caddy fmt /etc/caddy/Caddyfile
+
+EXPOSE 3000 3001
+# OpenShift ignores HEALTHCHECK; kept for Trivy/Docker best practices. Uses busybox wget (no curl).
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -q -O /dev/null http://127.0.0.1:3001/health || exit 1
+
+USER 1001
+ENTRYPOINT ["/usr/bin/caddy"]
+CMD ["run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

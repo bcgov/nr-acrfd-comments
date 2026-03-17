@@ -1,0 +1,104 @@
+{{- if .Values.mongodb.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "mongodb.fullname" . }}
+  labels:
+    {{- include "mongodb.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "mongodb.fullname" . }}-headless
+  replicas: {{ .Values.mongodb.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "mongodb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "mongodb.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if .Values.mongodb.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.mongodb.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.mongodb.securityContext | nindent 8 }}
+      containers:
+        - name: mongodb
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
+          ports:
+            - name: mongodb
+              containerPort: 27017
+              protocol: TCP
+          env:
+            - name: MONGODB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.secret.name }}
+                  key: mongodb-username
+            - name: MONGODB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.secret.name }}
+                  key: mongodb-password
+            - name: MONGODB_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.secret.name }}
+                  key: mongodb-database
+            - name: MONGODB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mongodb.secret.name }}
+                  key: mongodb-admin-password
+          {{- if .Values.mongodb.readinessProbe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.readinessProbe.tcpSocket.port }}
+            initialDelaySeconds: {{ .Values.mongodb.readinessProbe.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.mongodb.readinessProbe.timeoutSeconds }}
+            periodSeconds: {{ .Values.mongodb.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.mongodb.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.mongodb.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.mongodb.livenessProbe.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.mongodb.livenessProbe.tcpSocket.port }}
+            initialDelaySeconds: {{ .Values.mongodb.livenessProbe.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.mongodb.livenessProbe.timeoutSeconds }}
+            periodSeconds: {{ .Values.mongodb.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.mongodb.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.mongodb.livenessProbe.failureThreshold }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.mongodb.resources | nindent 12 }}
+          volumeMounts:
+            - name: mongodb-data
+              mountPath: {{ .Values.mongodb.persistence.mountPath }}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      {{- if .Values.mongodb.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.mongodb.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mongodb.affinity }}
+      affinity:
+        {{- toYaml .Values.mongodb.affinity | nindent 8 }}
+      {{- end }}
+      {{- if .Values.mongodb.tolerations }}
+      tolerations:
+        {{- toYaml .Values.mongodb.tolerations | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if .Values.mongodb.persistence.enabled }}
+        {{- if .Values.mongodb.persistence.existingClaim }}
+        - name: mongodb-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.mongodb.persistence.existingClaim }}
+        {{- end }}
+        {{- end }}
+{{- end }}

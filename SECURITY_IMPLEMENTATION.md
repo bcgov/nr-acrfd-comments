@@ -22,8 +22,8 @@ Secrets, providing:
 ```yaml
 # values.yaml (INSECURE - would be in Git!)
 mongodb:
-  password: tNRXuW8jjV4wnFqm
-  adminPassword: YK8JNKveTJHNt2G8
+  password: bla
+  adminPassword: bla
 ```
 
 **After:**

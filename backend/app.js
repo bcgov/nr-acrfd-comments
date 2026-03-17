@@ -96,6 +96,9 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
     pass: db_password,
     serverSelectionTimeoutMS: 10000, // Give up initial connection after 10 seconds
     socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    maxPoolSize: 50, // Allow up to 50 concurrent connections to MongoDB
+    minPoolSize: 10, // Maintain at least 10 connections in pool
+    maxIdleTimeMS: 30000, // Remove connections idle for 30 seconds
   }
   const safeDbLog = db_username
     ? `mongodb://${db_username}:***@${dbHost}/${dbDatabase}?authSource=admin`
@@ -118,8 +121,15 @@ swaggerTools.initializeMiddleware(swaggerConfig, function(middleware) {
       require('./api/helpers/models/review')
       defaultLog.info('db model loading done.')
 
-      app.listen(3000, '0.0.0.0', function() {
-        defaultLog.info('Started server on port 3000')
+      // Create server with larger backlog for handling concurrent connections
+      const server = app.listen(3000, '0.0.0.0', 1024, function() {
+        defaultLog.info('Started server on port 3000 with backlog 1024')
+      })
+
+      // Handle uncaught exceptions gracefully
+      process.on('uncaughtException', (err) => {
+        defaultLog.error('Uncaught exception:', err)
+        process.exit(1)
       })
     },
     (err) => {
