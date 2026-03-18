@@ -231,18 +231,27 @@ export class KeycloakService {
       return currentUser ? currentUser.token : null
     }
 
-    // Safety check: ensure keycloakAuth is initialized and has getToken method
+    // Safety check: ensure keycloakAuth is initialized
     if (!this.keycloakAuth) {
       console.warn('Keycloak service not initialized yet')
       return null
     }
 
-    if (typeof this.keycloakAuth.getToken !== 'function') {
-      console.warn('Keycloak getToken is not a function. Keycloak may not be fully initialized.')
+    // Support both keycloak-js v16 (.token property) and v18+ (.getToken() method)
+    if (typeof this.keycloakAuth.getToken === 'function') {
+      // keycloak-js v18+
+      console.log('Using keycloak-js v18+ API (.getToken() method)')
+      return this.keycloakAuth.getToken()
+    } else if (this.keycloakAuth.token) {
+      // keycloak-js v16 and earlier
+      console.log('Using keycloak-js v16 API (.token property)')
+      return this.keycloakAuth.token
+    } else {
+      console.warn(
+        'Unable to get token from Keycloak. Neither .getToken() nor .token are available.',
+      )
       return null
     }
-
-    return this.keycloakAuth.getToken()
   }
 
   /**
