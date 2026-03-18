@@ -9,7 +9,7 @@ import '@/scss/styles.scss'
 // Import the generated route tree
 import { routeTree } from './routeTree.gen'
 
-// Create a new router instance
+// Create a new router instance.
 const router = createRouter({ routeTree })
 
 // Register the router instance for type safety
