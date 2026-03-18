@@ -580,6 +580,30 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
     }
     const linkStyle = { textColor: [0, 0, 204] as any }
 
+    // Estimate the rendered height of a comment card before drawing it.
+    // Uses splitTextToSize to measure how many lines the comment text wraps into so the
+    // page-break decision is accurate regardless of comment length.
+    const estimateCardHeight = (c: Comment): number => {
+      const cellPad = 3 // matches cellPadding in styles
+      const tableFontSizeMm = (9 * 25.4) / 72 // 9pt → mm
+      const lineH = tableFontSizeMm * 1.15 // line-height factor
+
+      // Five fixed single-line rows (Contact Name / Date, Organisation / Anonymous,
+      // Location / Status, Email / Reviewer Notes, Phone / Attachments)
+      const fixedRowH = lineH + cellPad * 2
+      const fixedRowsTotal = 5 * fixedRowH
+
+      // Comment row spans columns 1-3: valueColW + labelColW + valueColW
+      const commentCellInnerW = valueColW + labelColW + valueColW - cellPad * 2
+      doc.setFontSize(9)
+      const lines: string[] = doc.splitTextToSize(c.comment || '—', commentCellInnerW)
+      const commentRowH = Math.max(18, lines.length * lineH + cellPad * 2)
+
+      // 6 mm for "Comment #N" header text + 4 mm gap to table top
+      const headerH = 10
+      return headerH + fixedRowsTotal + commentRowH
+    }
+
     allComments.forEach((c, i) => {
       const author = c.commentAuthor
       const dateStr = c.dateAdded ? new Date(c.dateAdded).toLocaleDateString('en-CA') : '\u2014'
@@ -589,10 +613,24 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
           ? c.documents.map((d: any) => d.displayName || d.documentFileName).join('\n')
           : '\u2014'
 
-      const cardY: number = (doc as any).lastAutoTable.finalY + (i === 0 ? 10 : 16)
+      let cardY: number = (doc as any).lastAutoTable.finalY + (i === 0 ? 10 : 16)
+      let newPage = false
 
-      // Divider line above each comment (skip first — app info block already separates it)
+      // Decide whether the next comment card fits in the remaining page space.
+      // We reserve 16 mm for the between-comment gap / divider and bottom margin.
       if (i > 0) {
+        const pageH = doc.internal.pageSize.getHeight()
+        const remaining = pageH - cardY - 16
+        const needed = estimateCardHeight(c)
+        if (needed > remaining) {
+          doc.addPage()
+          cardY = margin + 6
+          newPage = true
+        }
+      }
+
+      // Divider line above each comment (skip first and when starting a new page)
+      if (i > 0 && !newPage) {
         doc.setDrawColor(180, 180, 180)
         doc.setLineWidth(0.3)
         doc.line(margin, cardY - 8, pageWidth - margin, cardY - 8)
@@ -652,6 +690,7 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
         theme: 'grid',
         styles: { fontSize: 9, overflow: 'linebreak', cellPadding: 3 },
         margin: { left: margin, right: margin },
+        pageBreak: 'avoid',
         didDrawCell: ({ row, column, cell, doc }) => {
           // Attachments cell: row 4, column 3 (value column after "Attachments" label)
           if (row.index !== 4 || column.index !== 3 || !c.documents || !c.documents.length) return
