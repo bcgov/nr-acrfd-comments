@@ -83,6 +83,28 @@ spec:
               value: info
             - name: MONGODB_SERVICE_HOST
               value: "{{ .Values.mongodb.service.name | default "mongodb" }}"
+            - name: KEYCLOAK_ENABLED
+              value: "true"
+            - name: SSO_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-sso
+                  key: SSO_ISSUER
+            - name: SSO_JWKSURI
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-sso
+                  key: SSO_JWKSURI
+            - name: JWT_SIGN_EXPIRY
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-sso
+                  key: JWT_SIGN_EXPIRY
+            - name: SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-sso
+                  key: SECRET
           ports:
             - name: http
               containerPort: {{ .Values.backend.service.targetPort }}
