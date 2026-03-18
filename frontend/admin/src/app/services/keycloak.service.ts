@@ -194,15 +194,28 @@ export class KeycloakService {
   }
 
   isValidForSite() {
-    if (!this.getToken()) {
+    const token = this.getToken()
+    if (!token) {
+      console.log('isValidForSite: No token found')
       return false
     }
-    const jwt = new JwtUtil().decodeToken(this.getToken())
-    if (jwt && jwt.client_roles) {
-      return _.includes(jwt.client_roles, 'sysadmin')
-    } else {
-      return false
-    }
+    const jwt = new JwtUtil().decodeToken(token)
+    console.log('isValidForSite: JWT decoded:', jwt)
+    console.log('isValidForSite: client_roles:', jwt && jwt.client_roles)
+    console.log(
+      'isValidForSite: realm_access.roles:',
+      jwt && jwt.realm_access && jwt.realm_access.roles,
+    )
+
+    // Check both client_roles and realm_access.roles for sysadmin
+    const hasClientRole = jwt && jwt.client_roles && _.includes(jwt.client_roles, 'sysadmin')
+    const hasRealmRole = jwt && jwt.realm_access && _.includes(jwt.realm_access.roles, 'sysadmin')
+
+    console.log('isValidForSite: hasClientRole:', hasClientRole, 'hasRealmRole:', hasRealmRole)
+    const isValid = hasClientRole || hasRealmRole
+    console.log('isValidForSite: Final result:', isValid)
+
+    return isValid
   }
 
   /**
@@ -218,18 +231,27 @@ export class KeycloakService {
       return currentUser ? currentUser.token : null
     }
 
-    // Safety check: ensure keycloakAuth is initialized and has getToken method
+    // Safety check: ensure keycloakAuth is initialized
     if (!this.keycloakAuth) {
       console.warn('Keycloak service not initialized yet')
       return null
     }
 
-    if (typeof this.keycloakAuth.getToken !== 'function') {
-      console.warn('Keycloak getToken is not a function. Keycloak may not be fully initialized.')
+    // Support both keycloak-js v16 (.token property) and v18+ (.getToken() method)
+    if (typeof this.keycloakAuth.getToken === 'function') {
+      // keycloak-js v18+
+      console.log('Using keycloak-js v18+ API (.getToken() method)')
+      return this.keycloakAuth.getToken()
+    } else if (this.keycloakAuth.token) {
+      // keycloak-js v16 and earlier
+      console.log('Using keycloak-js v16 API (.token property)')
+      return this.keycloakAuth.token
+    } else {
+      console.warn(
+        'Unable to get token from Keycloak. Neither .getToken() nor .token are available.',
+      )
       return null
     }
-
-    return this.keycloakAuth.getToken()
   }
 
   /**
