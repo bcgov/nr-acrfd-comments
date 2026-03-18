@@ -194,15 +194,25 @@ export class KeycloakService {
   }
 
   isValidForSite() {
-    if (!this.getToken()) {
+    const token = this.getToken()
+    if (!token) {
+      console.log('isValidForSite: No token found')
       return false
     }
-    const jwt = new JwtUtil().decodeToken(this.getToken())
-    if (jwt && jwt.client_roles) {
-      return _.includes(jwt.client_roles, 'sysadmin')
-    } else {
-      return false
-    }
+    const jwt = new JwtUtil().decodeToken(token)
+    console.log('isValidForSite: JWT decoded:', jwt)
+    console.log('isValidForSite: client_roles:', jwt?.client_roles)
+    console.log('isValidForSite: realm_access.roles:', jwt?.realm_access?.roles)
+    
+    // Check both client_roles and realm_access.roles for sysadmin
+    const hasClientRole = jwt && jwt.client_roles && _.includes(jwt.client_roles, 'sysadmin')
+    const hasRealmRole = jwt && jwt.realm_access && _.includes(jwt.realm_access.roles, 'sysadmin')
+    
+    console.log('isValidForSite: hasClientRole:', hasClientRole, 'hasRealmRole:', hasRealmRole)
+    const isValid = hasClientRole || hasRealmRole
+    console.log('isValidForSite: Final result:', isValid)
+    
+    return isValid
   }
 
   /**
