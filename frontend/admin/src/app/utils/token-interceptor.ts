@@ -1,8 +1,8 @@
-import { HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { KeycloakService } from 'app/services/keycloak.service';
-import { Observable, Subject, throwError } from 'rxjs';
-import { catchError, switchMap, tap } from 'rxjs/operators';
+import { HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http'
+import { Injectable } from '@angular/core'
+import { KeycloakService } from 'app/services/keycloak.service'
+import { Observable, Subject, throwError } from 'rxjs'
+import { catchError, switchMap, tap } from 'rxjs/operators'
 
 /**
  * Intercepts all http requests and allows for the request and/or response to be manipulated.
@@ -13,10 +13,10 @@ import { catchError, switchMap, tap } from 'rxjs/operators';
  */
 @Injectable()
 export class TokenInterceptor implements HttpInterceptor {
-  private refreshTokenInProgress = false;
+  private refreshTokenInProgress = false
 
-  private tokenRefreshedSource = new Subject();
-  private tokenRefreshed$ = this.tokenRefreshedSource.asObservable();
+  private tokenRefreshedSource = new Subject()
+  private tokenRefreshed$ = this.tokenRefreshedSource.asObservable()
 
   constructor(private auth: KeycloakService) {}
 
@@ -31,24 +31,28 @@ export class TokenInterceptor implements HttpInterceptor {
    * @memberof TokenInterceptor
    */
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<any> {
-    request = this.addAuthHeader(request);
+    request = this.addAuthHeader(request)
 
     return next.handle(request).pipe(
-      catchError(error => {
+      catchError((error) => {
+        console.log('TokenInterceptor: Caught error with status:', error.status)
         if (error.status === 403) {
+          console.log('TokenInterceptor: Got 403, attempting token refresh')
           return this.refreshToken().pipe(
             switchMap(() => {
-              request = this.addAuthHeader(request);
-              return next.handle(request);
+              console.log('TokenInterceptor: Token refreshed, retrying request')
+              request = this.addAuthHeader(request)
+              return next.handle(request)
             }),
-            catchError(err => {
-              return throwError(err);
-            })
-          );
+            catchError((err) => {
+              console.error('TokenInterceptor: Token refresh failed, not retrying request', err)
+              return throwError(err)
+            }),
+          )
         }
-        return throwError(error);
-      })
-    );
+        return throwError(error)
+      }),
+    )
   }
 
   /**
@@ -60,13 +64,26 @@ export class TokenInterceptor implements HttpInterceptor {
    * @memberof TokenInterceptor
    */
   private addAuthHeader(request: HttpRequest<any>): HttpRequest<any> {
-    const authToken: string = this.auth.getToken() || '';
+    const authToken: string = this.auth.getToken()
 
-    request = request.clone({
-      setHeaders: { Authorization: 'Bearer ' + authToken }
-    });
+    console.log('TokenInterceptor: Getting token for request to', request.url)
+    console.log(
+      'TokenInterceptor: Token obtained:',
+      authToken ? '***' + authToken.substring(authToken.length - 10) : 'null',
+    )
 
-    return request;
+    if (authToken) {
+      request = request.clone({
+        setHeaders: { Authorization: 'Bearer ' + authToken },
+      })
+      console.log('TokenInterceptor: Added Authorization header')
+    } else {
+      console.warn(
+        'TokenInterceptor: No token available, request will be sent without Authorization header',
+      )
+    }
+
+    return request
   }
 
   /**
@@ -78,21 +95,25 @@ export class TokenInterceptor implements HttpInterceptor {
    */
   private refreshToken(): Observable<any> {
     if (this.refreshTokenInProgress) {
-      return new Observable(observer => {
+      console.log('TokenInterceptor: Refresh already in progress, waiting...')
+      return new Observable((observer) => {
         this.tokenRefreshed$.subscribe(() => {
-          observer.next();
-          observer.complete();
-        });
-      });
+          console.log('TokenInterceptor: Refresh completed, resuming')
+          observer.next()
+          observer.complete()
+        })
+      })
     } else {
-      this.refreshTokenInProgress = true;
+      console.log('TokenInterceptor: Starting token refresh')
+      this.refreshTokenInProgress = true
 
       return this.auth.refreshToken().pipe(
         tap(() => {
-          this.refreshTokenInProgress = false;
-          this.tokenRefreshedSource.next();
-        })
-      );
+          console.log('TokenInterceptor: Token refresh succeeded')
+          this.refreshTokenInProgress = false
+          this.tokenRefreshedSource.next()
+        }),
+      )
     }
   }
 }

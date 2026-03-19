@@ -17,13 +17,6 @@ spec:
     - host: {{ .Release.Name }}.{{ .Values.global.domain }}
       http:
         paths:
-          - path: /admin
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: {{ include "frontend.fullname" . }}
-                port:
-                  number: 4200
           - path: /
             pathType: ImplementationSpecific
             backend:

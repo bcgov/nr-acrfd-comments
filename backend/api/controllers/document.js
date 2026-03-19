@@ -247,6 +247,9 @@ exports.publicDownload = function(args, res, next) {
           res.setHeader('Content-Type', blob.internalMime)
           res.setHeader('Content-Disposition', 'inline;filename="' + blob.documentFileName + '"')
           stream.pipe(res)
+        } else {
+          defaultLog.warn('document publicDownload: file not found on disk:', blob.internalURL)
+          return Actions.sendResponse(res, 404, {})
         }
       } else {
         return Actions.sendResponse(res, 404, {})
@@ -291,6 +294,9 @@ exports.protectedDownload = function(args, res, next) {
           res.setHeader('Content-Type', blob.internalMime)
           res.setHeader('Content-Disposition', 'inline;filename="' + blob.documentFileName + '"')
           stream.pipe(res)
+        } else {
+          defaultLog.warn('document protectedDownload: file not found on disk:', blob.internalURL)
+          return Actions.sendResponse(res, 404, {})
         }
       } else {
         return Actions.sendResponse(res, 404, {})

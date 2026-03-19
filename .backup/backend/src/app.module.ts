@@ -17,7 +17,7 @@ import { HealthController } from './health.controller'
   providers: [AppService, PrismaService],
 })
 export class AppModule {
-  // let's add a middleware on all routes
+  // let's add a middleware on all routes.
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(HTTPLoggerMiddleware)
