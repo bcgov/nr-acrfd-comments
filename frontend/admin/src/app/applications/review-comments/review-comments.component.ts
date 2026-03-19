@@ -48,6 +48,7 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
   public pageCount = 1 // in case getCount() fails
   public pageNum = 1 // first page
   public sortBy = this.sortKeys[1].value // initial sort is by descending date
+  public includeAttachments = true
 
   // see official solution:
   // https://stackoverflow.com/questions/38008334/angular-rxjs-when-should-i-unsubscribe-from-subscription
@@ -484,6 +485,201 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
   }
   /** HTML + ZIP end */
 
+  onExportExcel() {
+    if (this.includeAttachments) {
+      this.exportToZip()
+    } else {
+      this.exportToExcel()
+    }
+  }
+
+  onExportPdf() {
+    if (this.includeAttachments) {
+      this.exportToPdf()
+    } else {
+      this.exportToPdfOnly()
+    }
+  }
+
+  /** PDF only (no attachments) */
+  async exportToPdfOnly() {
+    let allComments: Comment[]
+    try {
+      allComments = await this.commentService
+        .getAllByApplicationId(this.application._id, 0, 1000000, '%2BdateAdded', {
+          getDocuments: true,
+        })
+        .pipe(takeUntil(this.ngUnsubscribe))
+        .toPromise()
+    } catch (error) {
+      console.log('error =', error)
+      return
+    }
+
+    const app = this.application
+
+    const periodStart =
+      app.meta.currentPeriod && app.meta.currentPeriod.startDate
+        ? new Date(app.meta.currentPeriod.startDate).toLocaleDateString('en-CA')
+        : '\u2014'
+    const periodEnd =
+      app.meta.currentPeriod && app.meta.currentPeriod.endDate
+        ? new Date(app.meta.currentPeriod.endDate).toLocaleDateString('en-CA')
+        : '\u2014'
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const margin = 14
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const contentWidth = pageWidth - margin * 2
+
+    doc.setFontSize(16)
+    doc.setTextColor(0, 51, 102)
+    doc.text('Comments \u2013 Crown Land File: ' + (app.meta.clFile || '\u2014'), margin, 16)
+
+    autoTable(doc, {
+      startY: 22,
+      body: [
+        ['Applicant(s):', app.meta.applicants || '\u2014'],
+        ['Purpose / Subpurpose:', (app.purpose || '\u2014') + ' / ' + (app.subpurpose || '\u2014')],
+        ['Type / Subtype:', (app.type || '\u2014') + ' / ' + (app.subtype || '\u2014')],
+        ['Location:', app.location || '\u2014'],
+        ['Description:', app.description || '\u2014'],
+        ['Comment Period:', periodStart + ' \u2013 ' + periodEnd],
+        ['Total Comments:', allComments.length],
+      ],
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 50, textColor: [80, 80, 80] as any },
+        1: { cellWidth: 'auto' },
+      },
+      theme: 'plain',
+      styles: { fontSize: 10 },
+      margin: { left: margin, right: margin },
+    })
+
+    const labelColW = 36
+    const valueColW = (contentWidth - labelColW * 2) / 2
+    const labelStyle = {
+      fontStyle: 'bold' as any,
+      fillColor: [240, 244, 248] as any,
+      textColor: [60, 60, 60] as any,
+    }
+
+    const estimateCardHeight = (c: Comment): number => {
+      const cellPad = 3
+      const tableFontSizeMm = (9 * 25.4) / 72
+      const lineH = tableFontSizeMm * 1.15
+      const fixedRowH = lineH + cellPad * 2
+      const fixedRowsTotal = 5 * fixedRowH
+      const commentCellInnerW = valueColW + labelColW + valueColW - cellPad * 2
+      doc.setFontSize(9)
+      const lines: string[] = doc.splitTextToSize(c.comment || '\u2014', commentCellInnerW)
+      const commentRowH = Math.max(18, lines.length * lineH + cellPad * 2)
+      const headerH = 10
+      return headerH + fixedRowsTotal + commentRowH
+    }
+
+    allComments.forEach((c, i) => {
+      const author = c.commentAuthor
+      const dateStr = c.dateAdded ? new Date(c.dateAdded).toLocaleDateString('en-CA') : '\u2014'
+      const anonStr = author && author.requestedAnonymous ? 'Yes' : 'No'
+      const docNames =
+        c.documents && c.documents.length
+          ? c.documents.map((d: any) => `${i + 1}_${d.documentFileName}`).join('\n')
+          : '\u2014'
+
+      let cardY: number = (doc as any).lastAutoTable.finalY + (i === 0 ? 10 : 16)
+      let newPage = false
+
+      if (i > 0) {
+        const pageH = doc.internal.pageSize.getHeight()
+        const remaining = pageH - cardY - 16
+        const needed = estimateCardHeight(c)
+        if (needed > remaining) {
+          doc.addPage()
+          cardY = margin + 6
+          newPage = true
+        }
+      }
+
+      if (i > 0 && !newPage) {
+        doc.setDrawColor(180, 180, 180)
+        doc.setLineWidth(0.3)
+        doc.line(margin, cardY - 8, pageWidth - margin, cardY - 8)
+      }
+
+      doc.setFontSize(10)
+      doc.setTextColor(0, 51, 102)
+      doc.setFont(undefined, 'bold')
+      doc.text(`Comment #${i + 1}`, margin, cardY)
+      doc.setFont(undefined, 'normal')
+
+      autoTable(doc, {
+        startY: cardY + 4,
+        body: [
+          [
+            { content: 'Contact Name', styles: labelStyle },
+            (author && author.contactName) || '\u2014',
+            { content: 'Date', styles: labelStyle },
+            dateStr,
+          ],
+          [
+            { content: 'Organization', styles: labelStyle },
+            (author && author.orgName) || '\u2014',
+            { content: 'Anonymous', styles: labelStyle },
+            anonStr,
+          ],
+          [
+            { content: 'Location', styles: labelStyle },
+            (author && author.location) || '\u2014',
+            { content: 'Status', styles: labelStyle },
+            c.commentStatus || '\u2014',
+          ],
+          [
+            { content: 'Email', styles: labelStyle },
+            (author && author.internal && author.internal.email) || '\u2014',
+            { content: 'Reviewer Notes', styles: labelStyle },
+            (c.review && c.review.reviewerNotes) || '\u2014',
+          ],
+          [
+            { content: 'Phone', styles: labelStyle },
+            (author && author.internal && author.internal.phone) || '\u2014',
+            { content: 'Attachments', styles: labelStyle },
+            docNames,
+          ],
+          [
+            { content: 'Comment', styles: labelStyle },
+            { content: c.comment || '\u2014', colSpan: 3, styles: { minCellHeight: 18 } },
+          ],
+        ],
+        columnStyles: {
+          0: { cellWidth: labelColW },
+          1: { cellWidth: valueColW },
+          2: { cellWidth: labelColW },
+          3: { cellWidth: valueColW },
+        },
+        theme: 'grid',
+        styles: { fontSize: 9, overflow: 'linebreak', cellPadding: 3 },
+        margin: { left: margin, right: margin },
+        pageBreak: 'avoid',
+      })
+    })
+
+    const totalPages: number = (doc as any).internal.getNumberOfPages()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    doc.setFontSize(9)
+    doc.setTextColor(130, 130, 130)
+    doc.setFont(undefined, 'normal')
+    for (let p = 1; p <= totalPages; p++) {
+      doc.setPage(p)
+      doc.text(`Page ${p} of ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: 'center' })
+    }
+
+    const baseName =
+      'comments-' + app.meta.applicants.replace(/\s/g, '_') + moment(new Date()).format('-YYYYMMDD')
+    doc.save(`${baseName}.pdf`)
+  }
+  /** PDF only end */
+
   /** Print to PDF start */
   async exportToPdf() {
     let allComments: Comment[]
@@ -513,11 +709,9 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
       console.warn('Could not fetch application documents', e)
     }
 
-    // Collect all documents (application-level + comment-level) and download in parallel
-    const commentDocs = allComments.reduce((acc, comment) => acc.concat(comment.documents), [])
-    const allDocs = [...appDocuments, ...commentDocs].filter((doc) => !!doc._id)
+    // Download application-level documents (no prefix)
     await Promise.all(
-      allDocs.map(async (doc) => {
+      appDocuments.filter((doc) => !!doc._id).map(async (doc) => {
         try {
           const blob = await this.api.getDocumentBlob(doc._id)
           docFolder.file(doc.documentFileName, blob)
@@ -525,6 +719,24 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
           console.warn(`Could not download document: ${doc.documentFileName}`, e)
         }
       }),
+    )
+
+    // Download comment-level documents with comment number prefix
+    await Promise.all(
+      allComments.reduce((acc, comment, idx) => {
+        return acc.concat(
+          comment.documents
+            .filter((doc) => !!doc._id)
+            .map(async (doc) => {
+              try {
+                const blob = await this.api.getDocumentBlob(doc._id)
+                docFolder.file(`${idx + 1}_${doc.documentFileName}`, blob)
+              } catch (e) {
+                console.warn(`Could not download document: ${doc.documentFileName}`, e)
+              }
+            }),
+        )
+      }, [] as Promise<void>[]),
     )
 
     const app = this.application
@@ -580,19 +792,57 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
     }
     const linkStyle = { textColor: [0, 0, 204] as any }
 
+    // Estimate the rendered height of a comment card before drawing it.
+    // Uses splitTextToSize to measure how many lines the comment text wraps into so the
+    // page-break decision is accurate regardless of comment length.
+    const estimateCardHeight = (c: Comment): number => {
+      const cellPad = 3 // matches cellPadding in styles
+      const tableFontSizeMm = (9 * 25.4) / 72 // 9pt → mm
+      const lineH = tableFontSizeMm * 1.15 // line-height factor
+
+      // Five fixed single-line rows (Contact Name / Date, Organisation / Anonymous,
+      // Location / Status, Email / Reviewer Notes, Phone / Attachments)
+      const fixedRowH = lineH + cellPad * 2
+      const fixedRowsTotal = 5 * fixedRowH
+
+      // Comment row spans columns 1-3: valueColW + labelColW + valueColW
+      const commentCellInnerW = valueColW + labelColW + valueColW - cellPad * 2
+      doc.setFontSize(9)
+      const lines: string[] = doc.splitTextToSize(c.comment || '—', commentCellInnerW)
+      const commentRowH = Math.max(18, lines.length * lineH + cellPad * 2)
+
+      // 6 mm for "Comment #N" header text + 4 mm gap to table top
+      const headerH = 10
+      return headerH + fixedRowsTotal + commentRowH
+    }
+
     allComments.forEach((c, i) => {
       const author = c.commentAuthor
       const dateStr = c.dateAdded ? new Date(c.dateAdded).toLocaleDateString('en-CA') : '\u2014'
       const anonStr = author && author.requestedAnonymous ? 'Yes' : 'No'
       const docNames =
         c.documents && c.documents.length
-          ? c.documents.map((d: any) => d.displayName || d.documentFileName).join('\n')
+          ? c.documents.map((d: any) => `${i + 1}_${d.documentFileName}`).join('\n')
           : '\u2014'
 
-      const cardY: number = (doc as any).lastAutoTable.finalY + (i === 0 ? 10 : 16)
+      let cardY: number = (doc as any).lastAutoTable.finalY + (i === 0 ? 10 : 16)
+      let newPage = false
 
-      // Divider line above each comment (skip first — app info block already separates it)
+      // Decide whether the next comment card fits in the remaining page space.
+      // We reserve 16 mm for the between-comment gap / divider and bottom margin.
       if (i > 0) {
+        const pageH = doc.internal.pageSize.getHeight()
+        const remaining = pageH - cardY - 16
+        const needed = estimateCardHeight(c)
+        if (needed > remaining) {
+          doc.addPage()
+          cardY = margin + 6
+          newPage = true
+        }
+      }
+
+      // Divider line above each comment (skip first and when starting a new page)
+      if (i > 0 && !newPage) {
         doc.setDrawColor(180, 180, 180)
         doc.setLineWidth(0.3)
         doc.line(margin, cardY - 8, pageWidth - margin, cardY - 8)
@@ -652,6 +902,7 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
         theme: 'grid',
         styles: { fontSize: 9, overflow: 'linebreak', cellPadding: 3 },
         margin: { left: margin, right: margin },
+        pageBreak: 'avoid',
         didDrawCell: ({ row, column, cell, doc }) => {
           // Attachments cell: row 4, column 3 (value column after "Attachments" label)
           if (row.index !== 4 || column.index !== 3 || !c.documents || !c.documents.length) return
@@ -661,7 +912,7 @@ export class ReviewCommentsComponent implements OnInit, OnDestroy {
 
           c.documents.forEach((d: any, idx: number) => {
             doc.link(cell.x + pad, cell.y + pad + idx * lineH, cell.width - pad * 2, lineH, {
-              url: 'documents/' + encodeURIComponent(d.documentFileName),
+              url: 'documents/' + encodeURIComponent(`${i + 1}_${d.documentFileName}`),
             })
           })
         },
