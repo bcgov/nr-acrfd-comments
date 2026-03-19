@@ -146,8 +146,8 @@ export class ApiService {
 
     const { hostname } = window.location
     if (hostname === 'localhost') {
-      // Local
-      this.pathAPI = 'http://localhost:3001/api'
+      // Local - route through Caddy reverse proxy so CORS is not an issue
+      this.pathAPI = `${window.location.origin}/api`
       this.env = 'local'
     } else if (
       hostname === 'acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca' ||
