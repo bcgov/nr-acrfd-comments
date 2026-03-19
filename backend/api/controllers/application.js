@@ -586,7 +586,6 @@ exports.protectedRefresh = function(args, res, next) {
             return Actions.sendResponse(res, 200, updatedApplicationAndFeatures)
           },
           (error) => {
-            defaultLog.error('application protectedRefresh TTLSUtils.updateApplication:', error && (error.message || JSON.stringify(error)))
             return Actions.sendResponse(res, 500, error)
           },
         )
