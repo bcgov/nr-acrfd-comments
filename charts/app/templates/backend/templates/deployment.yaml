@@ -63,10 +63,27 @@ spec:
             allowPrivilegeEscalation: false
           image: "{{ .Values.global.registry | default "ghcr.io" }}/{{.Values.global.repository}}/backend:{{ .Values.global.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ default "Always" .Values.backend.imagePullPolicy }}
-          envFrom:
-            - secretRef:
-                name: {{ .Values.cronjob.updateShapes.secretName | default "nrts-prc-api-secrets" }}
           env:
+            - name: TTLS_API_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.ttlsSecretName | default "nrts-prc-api-secrets" }}
+                  key: ttls-api-endpoint
+            - name: WEBADE_AUTH_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.ttlsSecretName | default "nrts-prc-api-secrets" }}
+                  key: webade-auth-endpoint
+            - name: WEBADE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.ttlsSecretName | default "nrts-prc-api-secrets" }}
+                  key: webade-username
+            - name: WEBADE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.ttlsPasswordSecretName | default "ttls-api-test" }}
+                  key: apikey
             - name: MONGODB_USERNAME
               valueFrom:
                 secretKeyRef:
