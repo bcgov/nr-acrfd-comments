@@ -47,7 +47,7 @@ exports.loginWebADE = function() {
           if (obj && obj.access_token) {
             resolve(obj.access_token)
           } else {
-            reject()
+            reject(new Error('WebADE login succeeded but no access_token in response'))
           }
         } catch (e) {
           defaultLog.error('WebADE Login Error:', e)
@@ -291,7 +291,12 @@ exports.getApplicationByDispositionID = function(
       .catch(function(err) {
         if (err.response) {
           defaultLog.warn('TTLS API Response:', err.response.status, err.response.data)
-          reject({ code: err.response.status })
+          if (err.response.status === 404) {
+            // Application no longer exists in Tantalis - treat as not found rather than an error.
+            resolve(null)
+          } else {
+            reject({ code: err.response.status })
+          }
         } else {
           defaultLog.error('TTLS API Error:', err)
           reject(err)
@@ -399,10 +404,45 @@ const internalGetAllApplicationIDs = function(
 }
 
 /**
+ * Compares the ACRFD stored application against the latest Tantalis data.
+ * Returns true if any Tantalis-owned field has changed, false if the data is identical.
+ *
+ * @param {object} acrfdApp  The Application mongoose document
+ * @param {object} tantalisApp  The application data returned by Tantalis
+ * @returns {boolean}
+ */
+const hasApplicationChanged = function(acrfdApp, tantalisApp) {
+  const str = (v) => (v == null ? '' : String(v).trim())
+  const num = (v) => (v == null ? 0 : Number(v))
+
+  if (str(acrfdApp.purpose) !== str(tantalisApp.TENURE_PURPOSE)) return true
+  if (str(acrfdApp.subpurpose) !== str(tantalisApp.TENURE_SUBPURPOSE)) return true
+  if (str(acrfdApp.type) !== str(tantalisApp.TENURE_TYPE)) return true
+  if (str(acrfdApp.subtype) !== str(tantalisApp.TENURE_SUBTYPE)) return true
+  if (str(acrfdApp.status) !== str(tantalisApp.TENURE_STATUS)) return true
+  if (str(acrfdApp.reason) !== str(tantalisApp.TENURE_REASON)) return true
+  if (str(acrfdApp.tenureStage) !== str(tantalisApp.TENURE_STAGE)) return true
+  if (str(acrfdApp.location) !== str(tantalisApp.TENURE_LOCATION)) return true
+  if (str(acrfdApp.businessUnit) !== str(tantalisApp.RESPONSIBLE_BUSINESS_UNIT)) return true
+  if (str(acrfdApp.legalDescription) !== str(tantalisApp.TENURE_LEGAL_DESCRIPTION)) return true
+  if (num(acrfdApp.areaHectares) !== num(tantalisApp.areaHectares)) return true
+
+  const d1 = acrfdApp.statusHistoryEffectiveDate
+    ? new Date(acrfdApp.statusHistoryEffectiveDate).getTime()
+    : 0
+  const d2 = tantalisApp.statusHistoryEffectiveDate
+    ? new Date(tantalisApp.statusHistoryEffectiveDate).getTime()
+    : 0
+  if (d1 !== d2) return true
+
+  return false
+}
+
+/**
  * Given an ACRFD applications tantalisID (disposition ID), makes all necessary calls to update it with the latest information from Tantalis.
+ * If the fetched Tantalis data is identical to what is already stored, no database writes are performed.
  *
  * @param {string} applicationToUpdate an Application
- * @param {string} ttlsAccessToken a tantalis api bearer token
  * @returns {Promise}
  */
 exports.updateApplication = function(applicationToUpdate) {
@@ -411,7 +451,20 @@ exports.updateApplication = function(applicationToUpdate) {
       (tantalisApp) => {
         if (!tantalisApp) {
           defaultLog.warn('updateApplication - no Tantalis application found - not updating.')
-          return Promise.resolve()
+          return Promise.resolve({
+            application: applicationToUpdate,
+            features: [],
+            wasUpdated: false,
+          })
+        }
+
+        if (!hasApplicationChanged(applicationToUpdate, tantalisApp)) {
+          defaultLog.info('updateApplication - data unchanged, skipping DB write.')
+          return Promise.resolve({
+            application: applicationToUpdate,
+            features: [],
+            wasUpdated: false,
+          })
         }
 
         return deleteAllApplicationFeatures(applicationToUpdate)
@@ -426,6 +479,7 @@ exports.updateApplication = function(applicationToUpdate) {
               return Promise.resolve({
                 application: updatedApplication,
                 features: updatedApplicationAndFeatures.features,
+                wasUpdated: true,
               })
             })
           })
@@ -441,17 +495,13 @@ exports.updateApplication = function(applicationToUpdate) {
  * @returns {Promise}
  */
 const deleteAllApplicationFeatures = function(applicationObjectID) {
-  return new Promise(function(resolve, reject) {
-    const featureModel = mongoose.model('Feature')
-    featureModel.deleteMany({ applicationID: applicationObjectID }, function(error, data) {
-      if (error) {
-        defaultLog.error('deleteAllApplicationFeatures:', error)
-        reject(error)
-      }
-
-      resolve(data)
+  const featureModel = mongoose.model('Feature')
+  return featureModel
+    .deleteMany({ applicationID: applicationObjectID })
+    .catch(function(error) {
+      defaultLog.error('deleteAllApplicationFeatures:', error)
+      throw error
     })
-  })
 }
 
 /**
@@ -472,30 +522,36 @@ const updateFeatures = function(acrfdApp, tantalisApp) {
     let turf = require('@turf/turf')
     let helpers = require('@turf/helpers')
 
-    let centroids = helpers.featureCollection([])
-    _.each(tantalisApp.parcels, function(f) {
-      // Tags default public
-      f.tags = [['sysadmin'], ['public']]
-      // copy in all the app meta just to stay consistent.
-      f.properties.RESPONSIBLE_BUSINESS_UNIT = tantalisApp.RESPONSIBLE_BUSINESS_UNIT
-      f.properties.TENURE_PURPOSE = tantalisApp.TENURE_PURPOSE
-      f.properties.TENURE_SUBPURPOSE = tantalisApp.TENURE_SUBPURPOSE
-      f.properties.TENURE_STATUS = tantalisApp.TENURE_STATUS
-      f.properties.TENURE_REASON = tantalisApp.TENURE_REASON
-      f.properties.TENURE_TYPE = tantalisApp.TENURE_TYPE
-      f.properties.TENURE_STAGE = tantalisApp.TENURE_STAGE
-      f.properties.TENURE_SUBTYPE = tantalisApp.TENURE_SUBTYPE
-      f.properties.TENURE_LOCATION = tantalisApp.TENURE_LOCATION
-      f.properties.DISPOSITION_TRANSACTION_SID = tantalisApp.DISPOSITION_TRANSACTION_SID
-      f.properties.CROWN_LANDS_FILE = tantalisApp.CROWN_LANDS_FILE
+    let centroids
+    try {
+      centroids = helpers.featureCollection([])
+      _.each(tantalisApp.parcels, function(f) {
+        // Tags default public
+        f.tags = [['sysadmin'], ['public']]
+        // copy in all the app meta just to stay consistent.
+        f.properties.RESPONSIBLE_BUSINESS_UNIT = tantalisApp.RESPONSIBLE_BUSINESS_UNIT
+        f.properties.TENURE_PURPOSE = tantalisApp.TENURE_PURPOSE
+        f.properties.TENURE_SUBPURPOSE = tantalisApp.TENURE_SUBPURPOSE
+        f.properties.TENURE_STATUS = tantalisApp.TENURE_STATUS
+        f.properties.TENURE_REASON = tantalisApp.TENURE_REASON
+        f.properties.TENURE_TYPE = tantalisApp.TENURE_TYPE
+        f.properties.TENURE_STAGE = tantalisApp.TENURE_STAGE
+        f.properties.TENURE_SUBTYPE = tantalisApp.TENURE_SUBTYPE
+        f.properties.TENURE_LOCATION = tantalisApp.TENURE_LOCATION
+        f.properties.DISPOSITION_TRANSACTION_SID = tantalisApp.DISPOSITION_TRANSACTION_SID
+        f.properties.CROWN_LANDS_FILE = tantalisApp.CROWN_LANDS_FILE
 
-      allFeaturesForDisp.push(f)
-      // Get the polygon and put it for later centroid calculation
-      centroids.features.push(turf.centroid(f))
-    })
-    // Centroid of all the shapes.
-    if (centroids.features.length > 0) {
-      acrfdApp.centroid = turf.centroid(centroids).geometry.coordinates
+        allFeaturesForDisp.push(f)
+        // Get the polygon and put it for later centroid calculation
+        centroids.features.push(turf.centroid(f))
+      })
+      // Centroid of all the shapes.
+      if (centroids.features.length > 0) {
+        acrfdApp.centroid = turf.centroid(centroids).geometry.coordinates
+      }
+    } catch (err) {
+      defaultLog.error('updateFeatures: error processing parcels/centroids:', err)
+      return reject(err)
     }
     acrfdApp.client = ''
     for (let [idx, client] of Object.entries(tantalisApp.interestedParties)) {
@@ -526,6 +582,10 @@ const updateFeatures = function(acrfdApp, tantalisApp) {
       .then(function() {
         resolve({ application: acrfdApp, features: updatedFeatures })
       })
+      .catch(function(err) {
+        defaultLog.error('updateFeatures: error saving features:', err)
+        reject(err)
+      })
   })
 }
 
@@ -537,22 +597,17 @@ const updateFeatures = function(acrfdApp, tantalisApp) {
  * @returns {Promise}
  */
 const saveFeature = function(feature, applicationObjectID) {
-  return new Promise(function(resolve, reject) {
-    feature.applicationID = applicationObjectID
+  feature.applicationID = applicationObjectID
+  // Define security tag defaults.  Default public and sysadmin.
+  feature.tags = [['sysadmin'], ['public']]
 
-    // Define security tag defaults.  Default public and sysadmin.
-    feature.tags = [['sysadmin'], ['public']]
-
-    var featureModel = require('mongoose').model('Feature')
-    featureModel.create([feature], { upsert: false, new: true }, function(error, updatedFeature) {
-      if (error) {
-        defaultLog.error('saveFeature:', error)
-        reject(error)
-      }
-
-      resolve(updatedFeature)
+  var featureModel = require('mongoose').model('Feature')
+  return featureModel
+    .create([feature])
+    .catch(function(error) {
+      defaultLog.error('saveFeature:', error)
+      throw error
     })
-  })
 }
 
 /**
@@ -563,36 +618,27 @@ const saveFeature = function(feature, applicationObjectID) {
  * @returns
  */
 const updateApplicationMeta = function(acrfdApp, tantalisApp) {
-  return new Promise(function(resolve, reject) {
-    let updatedAppObject = {}
-    updatedAppObject.businessUnit = tantalisApp.RESPONSIBLE_BUSINESS_UNIT
-    updatedAppObject.purpose = tantalisApp.TENURE_PURPOSE
-    updatedAppObject.subpurpose = tantalisApp.TENURE_SUBPURPOSE
-    updatedAppObject.status = tantalisApp.TENURE_STATUS
-    updatedAppObject.reason = tantalisApp.TENURE_REASON
-    updatedAppObject.type = tantalisApp.TENURE_TYPE
-    updatedAppObject.tenureStage = tantalisApp.TENURE_STAGE
-    updatedAppObject.subtype = tantalisApp.TENURE_SUBTYPE
-    updatedAppObject.location = tantalisApp.TENURE_LOCATION
-    updatedAppObject.legalDescription = tantalisApp.TENURE_LEGAL_DESCRIPTION
-    updatedAppObject.centroid = acrfdApp.centroid
-    updatedAppObject.areaHectares = acrfdApp.areaHectares
-    updatedAppObject.client = acrfdApp.client
-    updatedAppObject.statusHistoryEffectiveDate = acrfdApp.statusHistoryEffectiveDate
+  let updatedAppObject = {}
+  updatedAppObject.businessUnit = tantalisApp.RESPONSIBLE_BUSINESS_UNIT
+  updatedAppObject.purpose = tantalisApp.TENURE_PURPOSE
+  updatedAppObject.subpurpose = tantalisApp.TENURE_SUBPURPOSE
+  updatedAppObject.status = tantalisApp.TENURE_STATUS
+  updatedAppObject.reason = tantalisApp.TENURE_REASON
+  updatedAppObject.type = tantalisApp.TENURE_TYPE
+  updatedAppObject.tenureStage = tantalisApp.TENURE_STAGE
+  updatedAppObject.subtype = tantalisApp.TENURE_SUBTYPE
+  updatedAppObject.location = tantalisApp.TENURE_LOCATION
+  updatedAppObject.legalDescription = tantalisApp.TENURE_LEGAL_DESCRIPTION
+  updatedAppObject.centroid = acrfdApp.centroid
+  updatedAppObject.areaHectares = acrfdApp.areaHectares
+  updatedAppObject.client = acrfdApp.client
+  updatedAppObject.statusHistoryEffectiveDate = acrfdApp.statusHistoryEffectiveDate
 
-    const ApplicationModel = mongoose.model('Application')
-    ApplicationModel.findOneAndUpdate(
-      { _id: acrfdApp._id },
-      updatedAppObject,
-      { new: true },
-      function(error, updatedApp) {
-        if (error) {
-          defaultLog.error('updateApplicationMeta:', error)
-          reject(error)
-        }
-
-        resolve(updatedApp)
-      },
-    )
-  })
+  const ApplicationModel = mongoose.model('Application')
+  return ApplicationModel.findOneAndUpdate({ _id: acrfdApp._id }, updatedAppObject, { new: true }).catch(
+    function(error) {
+      defaultLog.error('updateApplicationMeta:', error)
+      throw error
+    },
+  )
 }

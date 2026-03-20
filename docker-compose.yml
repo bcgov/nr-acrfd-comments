@@ -22,11 +22,11 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: *MONGODB_PASSWORD
       MONGO_INITDB_DATABASE: *MONGODB_DATABASE
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
-    ports: ["27017:27017"]
+    ports: ['27017:27017']
     volumes:
       - mongodb_data:/data/db
       - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
@@ -40,20 +40,25 @@ services:
     environment:
       <<: *mongodb-vars
       NODE_ENV: development
+      LOG_LEVEL: debug
       API_HOSTNAME: localhost:3000
       KEYCLOAK_ENABLED: ${KEYCLOAK_ENABLED:-false}
       SECRET: ${SECRET:-defaultSecret}
       SSO_ISSUER: ${SSO_ISSUER:-https://dev.oidc.gov.bc.ca/auth/realms/prc}
       SSO_JWKSURI: ${SSO_JWKSURI:-https://dev.oidc.gov.bc.ca/auth/realms/prc/protocol/openid-connect/certs}
-    ports: ["3001:3000"]
-    working_dir: "/app"
+      TTLS_API_ENDPOINT: ${TTLS_API_ENDPOINT}
+      WEBADE_AUTH_ENDPOINT: ${WEBADE_AUTH_ENDPOINT}
+      WEBADE_USERNAME: ${WEBADE_USERNAME}
+      WEBADE_PASSWORD: ${WEBADE_PASSWORD}
+    ports: ['3001:3000']
+    working_dir: '/app'
     volumes:
       - ./backend:/app
       - /app/node_modules
     command: npm start
 
-  frontend-admin:
-    container_name: frontend-admin
+  frontend:
+    container_name: frontend
     depends_on:
       - backend
     build:
@@ -62,23 +67,8 @@ services:
     environment:
       NODE_ENV: development
       BACKEND_URL: http://backend:3000
-    ports: ["4200:4200"]
-    working_dir: "/app"
-    volumes:
-      - ./frontend/admin:/app/admin
-
-  frontend-public:
-    container_name: frontend-public
-    depends_on:
-      - backend
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    environment:
-      NODE_ENV: development
-      BACKEND_URL: http://backend:3000
-    ports: ["3000:3000"]
-    working_dir: "/app"
+    ports: ['3000:3000']
+    working_dir: '/app'
     volumes:
       - ./frontend/public:/app/public
 

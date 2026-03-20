@@ -14,12 +14,8 @@ export class KeycloakService {
   constructor() {
     const origin = window.location.origin
 
-    console.log('~~~')
-    if (origin === 'http://localhost:4200') {
-      // Local development - Keycloak disabled
-      this.keycloakEnabled = false
-      console.log('Local')
-    } else if (
+    if (
+      origin === 'http://localhost:3000' ||
       origin === 'https://nrts-prc-dev.pathfinder.gov.bc.ca' ||
       origin === 'https://nrts-prc-master.pathfinder.gov.bc.ca' ||
       origin === 'https://acrfd-86cabb-dev.apps.silver.devops.gov.bc.ca' ||
@@ -27,7 +23,7 @@ export class KeycloakService {
       // PR deployments: nr-acrfd-comments-<pr-number>.apps.silver.devops.gov.bc.ca
       /^https:\/\/nr-acrfd-comments-\d+\.apps\.silver\.devops\.gov\.bc\.ca$/.test(origin)
     ) {
-      // Dev, Master, PR deployments
+      // Local, Dev, Master, PR deployments
       this.keycloakEnabled = true
       this.keycloakUrl = 'https://dev.loginproxy.gov.bc.ca/auth'
       this.keycloakRealm = 'standard'
