@@ -263,7 +263,7 @@ export class ApplicationsComponent implements OnInit, AfterViewInit, OnDestroy {
             // prepare 'pages' of gets
             const observables: Array<Observable<Application[]>> = [];
             for (let page = 0; page < Math.ceil(count / PAGE_SIZE); page++) {
-              observables.push(this.applicationService.getAll(page, PAGE_SIZE, this.filters, this.coordinates));
+              observables.push(this.applicationService.getAll(page, PAGE_SIZE, this.filters, this.coordinates, true));
             }
 
             // check if there's nothing to query

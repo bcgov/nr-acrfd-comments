@@ -234,11 +234,13 @@ export class ApplicationService {
    * Fetch all applications that match the given query parameter filters.
    *
    * Note: Doesn't include any secondary application data (documents, comment period, decisions, etc)
+   * unless specified.
    *
    * @param {number} [pageNum=0]
    * @param {number} [pageSize=1000]
    * @param {IFiltersType} filters
    * @param {string} coordinates
+   * @param {boolean} [includeFeatures=false] Whether to fetch features for each application
    * @returns {Observable<Application[]>}
    * @memberof ApplicationService
    */
@@ -247,6 +249,7 @@ export class ApplicationService {
     pageSize: number = 1000,
     filters: IFiltersType,
     coordinates: string,
+    includeFeatures: boolean = false,
   ): Observable<Application[]> {
     const queryParamSets = this.buildQueryParamSets(filters, coordinates)
 
@@ -277,6 +280,25 @@ export class ApplicationService {
         })
 
         return applications
+      }),
+      mergeMap((applications: Application[]) => {
+        // If features are not requested, return the applications as-is
+        if (!includeFeatures || applications.length === 0) {
+          return of(applications)
+        }
+
+        // Fetch features for each application in parallel
+        const featurePromises = applications.map((app) =>
+          this.featureService
+            .getByApplicationId(app._id)
+            .toPromise()
+            .then((features) => {
+              app.features = features
+              return app
+            }),
+        )
+
+        return Promise.all(featurePromises).then((appsWithFeatures) => appsWithFeatures as Application[])
       }),
       catchError(this.api.handleError),
     )
