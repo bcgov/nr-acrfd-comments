@@ -63,6 +63,9 @@ spec:
             allowPrivilegeEscalation: false
           image: "{{ .Values.global.registry | default "ghcr.io" }}/{{.Values.global.repository}}/backend:{{ .Values.global.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ default "Always" .Values.backend.imagePullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.cronjob.updateShapes.secretName | default "nrts-prc-api-secrets" }}
           env:
             - name: MONGODB_USERNAME
               valueFrom:
