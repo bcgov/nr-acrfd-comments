@@ -166,6 +166,9 @@ spec:
             limits:
               cpu: 4
               memory: 8Gi
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
       {{- with .Values.backend.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -188,5 +191,9 @@ spec:
                     values:
                       - {{ .Release.Name }}
               topologyKey: "kubernetes.io/hostname"
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: nrts-prc-api-docs-pvc
 
 {{- end }}
