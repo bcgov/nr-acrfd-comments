@@ -13,13 +13,11 @@ RUN npm install
 # Copy app code
 COPY . .
 
-# Create uploads directory and set permissions for OpenShift compatibility
+# Set permissions for OpenShift compatibility
 # OpenShift runs containers with a random UID but GID 0 (root group)
 # So we need to give group write permissions
-RUN mkdir -p uploads && \
-    chgrp -R 0 /app && \
-    chmod -R g=u /app && \
-    chmod -R g+w /app/uploads
+RUN chgrp -R 0 /app && \
+    chmod -R g=u /app
 
 # Set npm cache to a writable location
 ENV npm_config_cache=/tmp/.npm
