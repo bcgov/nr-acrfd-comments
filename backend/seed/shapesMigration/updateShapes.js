@@ -15,9 +15,7 @@
 // winston logger needs to be created before any local classes that use the logger are loaded.
 const defaultLog = require('../../api/helpers/logger')('updateShapes');
 
-const Promise = require('es6-promise').Promise;
-const _ = require('lodash');
-const request = require('request');
+const axios = require('axios');
 const querystring = require('querystring');
 const moment = require('moment');
 const TTLSUtils = require('../../api/helpers/ttlsUtils');
@@ -94,6 +92,25 @@ let jwt_expiry = null; // how long the token lasts before expiring
 let jwt_login_time = null; // time we last logged in
 
 /**
+ * Logs an http failure and normalizes it into an error to reject with.
+ *
+ * @param {String} caller name of the calling function, used for logging.
+ * @param {*} error error thrown by axios.
+ * @returns {Error} the error to reject/throw with.
+ */
+const handleRequestError = function(caller, error) {
+  if (error.response) {
+    // the request was made and the server responded with a non 2xx status code
+    const body = JSON.stringify(error.response.data);
+    defaultLog.warn(` - ${caller} response:`, error.response.status, body);
+    return new Error(`${error.response.status} ${body}`);
+  }
+
+  defaultLog.error(` - ${caller} error:`, error);
+  return error;
+};
+
+/**
  * Logs in to ACRFD.
  *
  * @param {String} username
@@ -101,40 +118,29 @@ let jwt_login_time = null; // time we last logged in
  * @returns {Promise} promise that resolves with the jwt_login token.
  */
 const loginToACRFD = function(username, password) {
-  return new Promise((resolve, reject) => {
-    const body = querystring.stringify({
-      grant_type: grant_type,
-      client_id: client_id,
-      username: username,
-      password: password
-    });
-    const contentLength = body.length;
-    request.post(
-      {
-        url: auth_endpoint,
-        headers: {
-          'Content-Length': contentLength,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: body
-      },
-      (error, res, body) => {
-        if (error) {
-          defaultLog.error(' - loginToACRFD error:', error);
-          reject(error);
-        } else if (res.statusCode !== 200) {
-          defaultLog.warn(' - loginToACRFD response:', res.statusCode, body);
-          reject(res.statusCode + ' ' + body);
-        } else {
-          const data = JSON.parse(body);
-          jwt_login = data.access_token;
-          jwt_expiry = data.expires_in;
-          jwt_login_time = moment();
-          resolve(data.access_token);
-        }
-      }
-    );
+  const body = querystring.stringify({
+    grant_type: grant_type,
+    client_id: client_id,
+    username: username,
+    password: password
   });
+
+  return axios
+    .post(auth_endpoint, body, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    })
+    .then(res => {
+      const data = res.data;
+      jwt_login = data.access_token;
+      jwt_expiry = data.expires_in;
+      jwt_login_time = moment();
+      return data.access_token;
+    })
+    .catch(error => {
+      throw handleRequestError('loginToACRFD', error);
+    });
 };
 
 /**
@@ -162,40 +168,26 @@ const renewJWTLogin = function() {
  */
 const getApplicationsToUnpublish = function() {
   defaultLog.info(' - fetching retired applications.');
-  return new Promise((resolve, reject) => {
-    const untilDate = moment().subtract(6, 'months');
+  const untilDate = moment().subtract(6, 'months');
 
-    // get all applications that are in a retired status and that have a last status update date older than 6 months ago.
-    let queryString = `?statusHistoryEffectiveDate[until]=${untilDate.toISOString()}`;
-    retiredStatuses.forEach(status => (queryString += `&status[eq]=${encodeURIComponent(status)}`));
+  // get all applications that are in a retired status and that have a last status update date older than 6 months ago.
+  let queryString = `?statusHistoryEffectiveDate[until]=${untilDate.toISOString()}`;
+  retiredStatuses.forEach(status => (queryString += `&status[eq]=${encodeURIComponent(status)}`));
 
-    request.get(
-      {
-        url: uri + 'api/application' + queryString,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + jwt_login
-        }
-      },
-      (error, res, body) => {
-        if (error) {
-          defaultLog.error(' - getApplicationsToUnpublish error:', error, res, body);
-          reject(error);
-        } else if (res.statusCode !== 200) {
-          defaultLog.warn(' - getApplicationsToUnpublish response:', res.statusCode, body);
-          reject(res.statusCode + ' ' + body);
-        } else {
-          const data = JSON.parse(body);
-
-          // only return applications that are currently published
-          const appsToUnpublish = _.filter(data, app => {
-            return Actions.isPublished(app);
-          });
-          resolve(appsToUnpublish);
-        }
+  return axios
+    .get(uri + 'api/application' + queryString, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + jwt_login
       }
-    );
-  });
+    })
+    .then(res => {
+      // only return applications that are currently published
+      return res.data.filter(app => Actions.isPublished(app));
+    })
+    .catch(error => {
+      throw handleRequestError('getApplicationsToUnpublish', error);
+    });
 };
 
 /**
@@ -207,31 +199,20 @@ const getApplicationsToUnpublish = function() {
 const unpublishApplications = function(applicationsToUnpublish) {
   return applicationsToUnpublish.reduce((previousApp, currentApp) => {
     return previousApp.then(() => {
-      return new Promise((resolve, reject) => {
-        request.put(
-          {
-            url: uri + 'api/application/' + currentApp._id + '/unpublish',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: 'Bearer ' + jwt_login
-            },
-            body: JSON.stringify(currentApp)
-          },
-          (error, res, body) => {
-            if (error) {
-              defaultLog.error(' - unpublishApplications error:', error);
-              reject(error);
-            } else if (res.statusCode !== 200) {
-              defaultLog.warn(' - unpublishApplications response:', res.statusCode, body);
-              reject(res.statusCode + ' ' + body);
-            } else {
-              defaultLog.info(` - Unpublished application, _id: ${currentApp._id}`);
-              const data = JSON.parse(body);
-              resolve(data);
-            }
+      return axios
+        .put(uri + 'api/application/' + currentApp._id + '/unpublish', currentApp, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + jwt_login
           }
-        );
-      });
+        })
+        .then(res => {
+          defaultLog.info(` - Unpublished application, _id: ${currentApp._id}`);
+          return res.data;
+        })
+        .catch(error => {
+          throw handleRequestError('unpublishApplications', error);
+        });
     });
   }, Promise.resolve());
 };
@@ -243,36 +224,21 @@ const unpublishApplications = function(applicationsToUnpublish) {
  * @returns {Promise}
  */
 const updateACRFDApplication = function(acrfdAppID) {
-  return new Promise((resolve, reject) => {
-    // only update the ones that aren't deleted
-    const url = uri + `api/application/${acrfdAppID}/refresh`;
-    request.put(
-      {
-        url: url,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + jwt_login
-        }
-      },
-      (error, res, body) => {
-        if (error) {
-          defaultLog.error(' - updateACRFDApplication error:', error);
-          reject(error);
-        } else if (res.statusCode !== 200) {
-          defaultLog.warn(' - updateACRFDApplication response:', res.statusCode, body);
-          reject(res.statusCode + ' ' + body);
-        } else {
-          let obj = {};
-          try {
-            obj = JSON.parse(body);
-            resolve(obj);
-          } catch (e) {
-            defaultLog.info(' - updateACRFDApplication parse error:', e);
-          }
-        }
+  // only update the ones that aren't deleted
+  const url = uri + `api/application/${acrfdAppID}/refresh`;
+
+  return axios
+    .put(url, undefined, {
+      // the refresh route takes no body
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + jwt_login
       }
-    );
-  });
+    })
+    .then(res => res.data)
+    .catch(error => {
+      throw handleRequestError('updateACRFDApplication', error);
+    });
 };
 
 /**
@@ -283,36 +249,20 @@ const updateACRFDApplication = function(acrfdAppID) {
  * @returns {Promise} promise that resolves with an array of ACRFD applications.
  */
 const getAllACRFDApplicationIDs = function() {
-  return new Promise((resolve, reject) => {
-    // only update the ones that aren't deleted
-    const url = uri + 'api/application/' + '?fields=tantalisID&isDeleted=false';
-    request.get(
-      {
-        url: url,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + jwt_login
-        }
-      },
-      (error, res, body) => {
-        if (error) {
-          defaultLog.error(' - getAllACRFDApplicationIDs error:', error);
-          reject(error);
-        } else if (res.statusCode !== 200) {
-          defaultLog.warn(' - getAllACRFDApplicationIDs response:', res.statusCode, body);
-          reject(res.statusCode + ' ' + body);
-        } else {
-          let obj = {};
-          try {
-            obj = JSON.parse(body);
-            resolve(obj);
-          } catch (e) {
-            defaultLog.info(' - getAllACRFDApplicationIDs parse error:', e);
-          }
-        }
+  // only update the ones that aren't deleted
+  const url = uri + 'api/application/' + '?fields=tantalisID&isDeleted=false';
+
+  return axios
+    .get(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + jwt_login
       }
-    );
-  });
+    })
+    .then(res => res.data)
+    .catch(error => {
+      throw handleRequestError('getAllACRFDApplicationIDs', error);
+    });
 };
 
 /**
