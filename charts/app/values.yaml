@@ -82,6 +82,17 @@ cronjob:
     schedule: '0 2 * * *'
     #-- the name of the secret containing cronjob configuration (nrts-prc-api-secrets in each environment)
     secretName: nrts-prc-api-secrets
+    #-- where the job reaches the ACRFD API. Defaults to the in-cluster backend service,
+    #-- because the api-host/api-protocol/api-port keys in the secret above point at a
+    #-- route that no longer resolves. Override only to target the API through its route.
+    apiProtocol: http
+    apiHost: "" # empty = the backend service for this release
+    apiPort: "" # empty = backend.service.port
+    #-- how far back to look for Tantalis applications whose status history was updated.
+    #-- 4 year matches the long-running OpenShift cronjob; set timeCount to null to fall
+    #-- back to the script's own default of 1 week. Both must be set together.
+    timeCount: 4
+    timeMetric: year
 
 frontend:
   # -- enable or disable a component deployment.
