@@ -12,6 +12,22 @@ const JWT_SIGN_EXPIRY = process.env.JWT_SIGN_EXPIRY || '1440' // 24 hours in min
 const SECRET = process.env.SECRET || 'defaultSecret'
 const KEYCLOAK_ENABLED = process.env.KEYCLOAK_ENABLED || 'true'
 
+// A Keycloak client_credentials token authenticates a *client*, not a user, so Keycloak issues
+// it no realm or client roles at all -- realm_access and resource_access are absent entirely.
+// The update-shapes cronjob authenticates this way, which leaves it unable to satisfy any
+// x-security-scopes. Rather than exempt it from authorization, grant a named service client a
+// fixed, narrow set of roles and let the normal per-route scope checks apply as usual.
+//
+// This is safe against forgery: azp is a claim inside the JWT, so it is only trusted after the
+// RS256 signature and issuer have already been verified below. It is NOT a substitute for
+// assigning the service account a real role in Keycloak -- with this in place, access can only
+// be revoked by rotating the client secret or changing this config, not from the SSO console.
+const SERVICE_CLIENT_ID = process.env.SERVICE_CLIENT_ID || ''
+const SERVICE_CLIENT_ROLES = (process.env.SERVICE_CLIENT_ROLES || 'user,write:application')
+  .split(',')
+  .map((role) => role.trim())
+  .filter((role) => role.length)
+
 exports.verifyToken = function(req, authOrSecDef, token, callback) {
   defaultLog.info('verifying token')
   defaultLog.debug('token:', token)
@@ -67,6 +83,12 @@ function _verifySecret(currentScopes, tokenString, secret, req, callback, sendEr
       (decodedToken && decodedToken.realm_access && decodedToken.realm_access.roles) ||
       (decodedToken && decodedToken.client_roles) ||
       []
+
+    // Fall back to the configured roles for a recognised service client (see note above).
+    if (!tokenRoles.length && SERVICE_CLIENT_ID && decodedToken && decodedToken.azp === SERVICE_CLIENT_ID) {
+      defaultLog.info('Applying service client roles for azp:', decodedToken.azp)
+      tokenRoles = SERVICE_CLIENT_ROLES
+    }
 
     // check if the JWT was verified correctly
     if (

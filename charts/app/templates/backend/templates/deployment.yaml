@@ -105,6 +105,17 @@ spec:
               value: "{{ .Values.mongodb.service.name | default "mongodb" }}"
             - name: KEYCLOAK_ENABLED
               value: "true"
+            {{- with .Values.backend.serviceClient }}
+            {{- if .clientId }}
+            # Grants a named Keycloak service client (the update-shapes cronjob) a fixed set of
+            # roles, since a client_credentials token carries none. Leave clientId empty to
+            # disable, once the service account has a real role assigned in Keycloak.
+            - name: SERVICE_CLIENT_ID
+              value: {{ .clientId | quote }}
+            - name: SERVICE_CLIENT_ROLES
+              value: {{ .roles | default "user,write:application" | quote }}
+            {{- end }}
+            {{- end }}
             - name: SSO_ISSUER
               valueFrom:
                 secretKeyRef:
