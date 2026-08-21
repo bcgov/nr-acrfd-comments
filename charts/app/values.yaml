@@ -69,6 +69,15 @@ backend:
   pdb:
     enabled: false # enable it in PRODUCTION for having pod disruption budget.
     minAvailable: 1 # the minimum number of pods that must be available during the disruption budget.
+  #-- a Keycloak service client that authenticates with the client_credentials grant. Such a
+  #-- token carries no roles at all, so it cannot satisfy any x-security-scopes on its own.
+  #-- Naming it here grants it the listed roles; the normal per-route scope checks still apply.
+  #-- Set clientId to "" to disable, which is the right move once the service account has a
+  #-- real role assigned in Keycloak. Deliberately NOT sysadmin: 'user' covers the reads the
+  #-- update-shapes job makes and 'write:application' covers unpublish/refresh.
+  serviceClient:
+    clientId: acrfd-api-4384
+    roles: user,write:application
   #-- the name of the secret containing TTLS/WebADE connection config (WEBADE_AUTH_ENDPOINT, WEBADE_USERNAME, TTLS_API_ENDPOINT)
   ttlsSecretName: nrts-prc-api-secrets
   #-- the name of the secret containing the TTLS API key (WEBADE_PASSWORD stored under key 'apikey')
@@ -82,6 +91,17 @@ cronjob:
     schedule: '0 2 * * *'
     #-- the name of the secret containing cronjob configuration (nrts-prc-api-secrets in each environment)
     secretName: nrts-prc-api-secrets
+    #-- where the job reaches the ACRFD API. Defaults to the in-cluster backend service,
+    #-- because the api-host/api-protocol/api-port keys in the secret above point at a
+    #-- route that no longer resolves. Override only to target the API through its route.
+    apiProtocol: http
+    apiHost: "" # empty = the backend service for this release
+    apiPort: "" # empty = backend.service.port
+    #-- how far back to look for Tantalis applications whose status history was updated.
+    #-- 4 year matches the long-running OpenShift cronjob; set timeCount to null to fall
+    #-- back to the script's own default of 1 week. Both must be set together.
+    timeCount: 4
+    timeMetric: year
 
 frontend:
   # -- enable or disable a component deployment.

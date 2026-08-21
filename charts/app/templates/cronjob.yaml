@@ -1,4 +1,5 @@
 {{- if .Values.cronjob.enabled }}
+{{- $apiSecret := .Values.cronjob.updateShapes.secretName | default "nrts-prc-api-secrets" }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -33,6 +34,8 @@ spec:
                 - /app/seed/shapesMigration/updateShapes.js
               # Parameters for updateShapes script:
               # <username> <password> <protocol> <host> <port> <client_id> <grant_type> <auth_endpoint>
+              # followed by the optional <time_count> <time_metric> pair. The script rejects
+              # exactly 9 arguments, so these two are all-or-nothing.
               args:
                 - "$(API_USERNAME)"
                 - "$(API_PASSWORD)"
@@ -42,14 +45,57 @@ spec:
                 - "$(CLIENT_ID)"
                 - "$(GRANT_TYPE)"
                 - "$(AUTH_ENDPOINT)"
-              envFrom:
-                - secretRef:
-                    name: mongodb-secret
-                - secretRef:
-                    name: {{ .Values.cronjob.updateShapes.secretName | default "nrts-prc-api-secrets" }}
+                {{- with .Values.cronjob.updateShapes.timeCount }}
+                - {{ . | quote }}
+                - {{ $.Values.cronjob.updateShapes.timeMetric | required "cronjob.updateShapes.timeMetric is required when timeCount is set" | quote }}
+                {{- end }}
+              # NOTE: envFrom is deliberately not used here. The keys in {{ $apiSecret }} are
+              # kebab-case (api-username, ...), which are not valid environment variable names,
+              # so kubelet silently skips every one of them. On top of that, $(VAR) substitution
+              # in `args` only resolves names declared in this `env` list -- envFrom values are
+              # never expanded in command/args. Both reasons require explicit secretKeyRef
+              # entries, which also let us map the kebab-case key onto the name the script wants.
               env:
                 - name: LOG_LEVEL
                   value: info
+                {{- range $name, $key := dict
+                    "API_USERNAME" "api-username"
+                    "API_PASSWORD" "api-password"
+                    "CLIENT_ID" "client-id"
+                    "GRANT_TYPE" "grant-type"
+                    "AUTH_ENDPOINT" "auth-endpoint" }}
+                - name: {{ $name }}
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $apiSecret }}
+                      key: {{ $key }}
+                {{- end }}
+                # Where to reach the ACRFD API. Deliberately NOT read from the secret: its
+                # api-host/api-protocol/api-port keys point at a route that no longer exists.
+                # Defaults target the backend service directly, so the job stays in-cluster.
+                - name: API_PROTOCOL
+                  value: {{ .Values.cronjob.updateShapes.apiProtocol | default "http" | quote }}
+                - name: API_HOST
+                  value: {{ .Values.cronjob.updateShapes.apiHost | default (include "backend.fullname" .) | quote }}
+                - name: API_PORT
+                  value: {{ .Values.cronjob.updateShapes.apiPort | default .Values.backend.service.port | quote }}
+                # Tantalis/WebADE config, using the same secrets as the backend deployment.
+                # Without these ttlsUtils silently falls back to the t1api TEST instance.
+                {{- range $name, $key := dict
+                    "TTLS_API_ENDPOINT" "ttls-api-endpoint"
+                    "WEBADE_AUTH_ENDPOINT" "webade-auth-endpoint"
+                    "WEBADE_USERNAME" "webade-username" }}
+                - name: {{ $name }}
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ $.Values.backend.ttlsSecretName | default "nrts-prc-api-secrets" }}
+                      key: {{ $key }}
+                {{- end }}
+                - name: WEBADE_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.backend.ttlsPasswordSecretName | default "ttls-api-test" }}
+                      key: apikey
               resources:
                 requests:
                   cpu: 50m

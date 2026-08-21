@@ -118,12 +118,21 @@ const handleRequestError = function(caller, error) {
  * @returns {Promise} promise that resolves with the jwt_login token.
  */
 const loginToACRFD = function(username, password) {
-  const body = querystring.stringify({
-    grant_type: grant_type,
-    client_id: client_id,
-    username: username,
-    password: password
-  });
+  // The client_credentials grant authenticates the *client*, not a user: the secret must be
+  // sent as client_secret. Sending it as `password` makes Keycloak reject the request with
+  // 401 unauthorized_client. Other grants (eg. password) still take username/password.
+  const credentials =
+    grant_type === 'client_credentials' ? { client_secret: password } : { username: username, password: password };
+
+  const body = querystring.stringify(
+    Object.assign(
+      {
+        grant_type: grant_type,
+        client_id: client_id
+      },
+      credentials
+    )
+  );
 
   return axios
     .post(auth_endpoint, body, {
